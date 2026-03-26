@@ -7,23 +7,21 @@
     <style>
         body {
             margin: 0;
-            overflow: hidden; /* Убираем прокрутку */
-            background-color: #87CEEB; /* Цвет неба */
-            touch-action: none; /* Отключаем стандартные жесты браузера */
+            overflow: hidden;
+            background-color: #87CEEB;
+            touch-action: none;
         }
         canvas {
             display: block;
         }
-        /* Зона для джойстика слева */
         #joystick-zone {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             z-index: 10;
         }
-        /* Кнопка прыжка справа */
         #jump-btn {
             position: absolute;
             bottom: 40px;
@@ -46,118 +44,169 @@
 </head>
 <body>
 
-    <!-- UI Элементы -->
     <div id="joystick-zone"></div>
     <button id="jump-btn">JUMP</button>
 
-    <!-- Подключаем библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- OrbitControls для вращения и зума камеры -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- Nipple.js для джойстика -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 
     <script>
-        // --- 1. БАЗОВАЯ НАСТРОЙКА СЦЕНЫ ---
+        // --- 1. БАЗОВАЯ НАСТРОЙКА ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Голубое небо
+        scene.background = new THREE.Color(0x87CEEB); // Небо
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 70); // Легкий туман для реализма
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Включаем тени
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Мягкие тени
         document.body.appendChild(renderer.domElement);
 
-        // Освещение
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // --- ОСВЕЩЕНИЕ (для реализма) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
+
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(10, 20, 10);
+        dirLight.position.set(20, 40, 20);
+        dirLight.castShadow = true; // Свет отбрасывает тени
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 100;
+        dirLight.shadow.camera.left = -50;
+        dirLight.shadow.camera.right = 50;
+        dirLight.shadow.camera.top = 50;
+        dirLight.shadow.camera.bottom = -50;
         scene.add(dirLight);
 
-        // --- 2. СОЗДАНИЕ КАРТЫ ---
-        const mapSize = 40; // Средний размер карты
+        // --- ГЕНЕРАТОРЫ ТЕКСТУР (без скачивания файлов) ---
+        function createGrassTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#3a5f0b'; ctx.fillRect(0,0,256,256);
+            for(let i=0; i<8000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#4c7a11' : '#2d4a08';
+                ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(30, 30);
+            return tex;
+        }
 
-        // Земля (Зеленая платформа)
+        function createConveyorTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#222'; ctx.fillRect(0,0,256,256);
+            ctx.fillStyle = '#aa0000';
+            for(let i=-256; i<512; i+=64) {
+                ctx.beginPath();
+                ctx.moveTo(0, i); ctx.lineTo(256, i + 128);
+                ctx.lineTo(256, i + 160); ctx.lineTo(0, i + 32);
+                ctx.fill();
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(1, 20);
+            return tex;
+        }
+
+        // --- 2. СОЗДАНИЕ КАРТЫ ---
+        const mapSize = 80; // Карта стала в 2 раза больше
+
+        // Земля
         const floorGeo = new THREE.PlaneGeometry(mapSize, mapSize);
-        const floorMat = new THREE.MeshLambertMaterial({ color: 0x228B22 }); // Зеленый цвет
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            map: createGrassTexture(),
+            roughness: 0.8
+        });
         const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2; // Кладем на пол
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true; // Земля принимает тени
         scene.add(floor);
 
-        // Красный конвейер по центру
-        const conveyorGeo = new THREE.BoxGeometry(4, 0.5, 12);
-        const conveyorMat = new THREE.MeshLambertMaterial({ color: 0xff0000 }); // Красный
+        // Конвейер (От стены А до стены Б)
+        const conveyorWidth = 8;
+        const conveyorGeo = new THREE.BoxGeometry(conveyorWidth, 0.5, mapSize);
+        const conveyorTex = createConveyorTexture();
+        const conveyorMat = new THREE.MeshStandardMaterial({ 
+            map: conveyorTex,
+            roughness: 0.5
+        });
         const conveyor = new THREE.Mesh(conveyorGeo, conveyorMat);
-        conveyor.position.set(0, 0.25, 0); // Чуть приподнят над землей
+        conveyor.position.set(0, 0.25, 0); // По центру всей карты
+        conveyor.receiveShadow = true;
+        conveyor.castShadow = true;
         scene.add(conveyor);
 
-        // Серые стены по краям
-        const wallMat = new THREE.MeshLambertMaterial({ color: 0x808080 }); // Серый
+        // Серые стены
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 });
         const wallThickness = 2;
-        const wallHeight = 5;
+        const wallHeight = 6;
 
         function createWall(x, z, width, depth) {
             const wall = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, depth), wallMat);
             wall.position.set(x, wallHeight / 2, z);
+            wall.receiveShadow = true;
+            wall.castShadow = true;
             scene.add(wall);
         }
 
-        // Создаем 4 стены
+        // Расставляем стены по краям (mapSize 80 = от -40 до 40)
         createWall(0, -mapSize/2, mapSize, wallThickness); // Север
         createWall(0, mapSize/2, mapSize, wallThickness);  // Юг
         createWall(-mapSize/2, 0, wallThickness, mapSize); // Запад
         createWall(mapSize/2, 0, wallThickness, mapSize);  // Восток
 
-        // --- 3. ИГРОК ---
-        const playerGeo = new THREE.BoxGeometry(1, 2, 1); // Игрок - кубик
-        const playerMat = new THREE.MeshLambertMaterial({ color: 0xffff00 }); // Желтый
+        // --- 3. ИГРОК И КАМЕРА ---
+        const playerGeo = new THREE.BoxGeometry(1.2, 2.4, 1.2);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.3 });
         const player = new THREE.Mesh(playerGeo, playerMat);
-        player.position.set(0, 1, 15); // Стартовая позиция
+        player.position.set(10, 1.2, 20);
+        player.castShadow = true; // Игрок отбрасывает тень
         scene.add(player);
 
-        // Настройка камеры (чтобы крутилась вокруг игрока)
+        // Настройка камеры
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(0, 5, 20); // Начальная позиция камеры
-        controls.enablePan = false; // Отключаем смещение камеры двумя пальцами
-        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Не даем камере опускаться под землю
-        controls.minDistance = 2; // Максимальное приближение
-        controls.maxDistance = 20; // Максимальное отдаление
+        camera.position.set(10, 6, 28); // Камера сзади и сверху
+        controls.enablePan = false;
+        controls.maxPolarAngle = Math.PI / 2 - 0.1; 
+        controls.minDistance = 4; 
+        controls.maxDistance = 15;
 
-        // --- 4. УПРАВЛЕНИЕ (Джойстик и Прыжок) ---
+        // Переменная для сохранения прошлой позиции игрока (нужна для камеры)
+        let prevPlayerPos = player.position.clone();
+
+        // --- 4. УПРАВЛЕНИЕ ---
         let moveVector = { x: 0, z: 0 };
-        const speed = 0.15;
+        const speed = 0.25; // Слегка увеличили скорость из-за большой карты
 
-        // Настройка Nipple.js (джойстик)
         const joystickManager = nipplejs.create({
             zone: document.getElementById('joystick-zone'),
             mode: 'static',
-            position: { left: '60px', bottom: '60px' },
+            position: { left: '70px', bottom: '70px' },
             color: 'white'
         });
 
         joystickManager.on('move', (evt, data) => {
-            // Конвертируем угол джойстика в направления X и Z
             const angle = data.angle.radian;
-            const force = Math.min(data.force, 1); // Ограничиваем силу
-            
-            // Математика для движения (учитывая что камера смотрит вперед)
+            const force = Math.min(data.force, 1);
             moveVector.x = Math.cos(angle) * force;
             moveVector.z = -Math.sin(angle) * force;
         });
 
-        joystickManager.on('end', () => {
-            moveVector = { x: 0, z: 0 }; // Остановка при отпускании
-        });
+        joystickManager.on('end', () => { moveVector = { x: 0, z: 0 }; });
 
-        // Прыжок
         let velocityY = 0;
         let isGrounded = true;
-        const gravity = -0.015;
-        const jumpStrength = 0.3;
+        const gravity = -0.02;
+        const jumpStrength = 0.4;
 
-        const jumpBtn = document.getElementById('jump-btn');
-        // Поддержка и мыши и тачскрина
         const jumpAction = (e) => {
             e.preventDefault();
             if (isGrounded) {
@@ -165,25 +214,26 @@
                 isGrounded = false;
             }
         };
-        jumpBtn.addEventListener('touchstart', jumpAction);
+        const jumpBtn = document.getElementById('jump-btn');
+        jumpBtn.addEventListener('touchstart', jumpAction, {passive: false});
         jumpBtn.addEventListener('mousedown', jumpAction);
 
-        // --- 5. ИГРОВОЙ ЦИКЛ (Физика и Рендер) ---
-        const playerHalfSize = 0.5;
+        // --- 5. ИГРОВОЙ ЦИКЛ ---
         const boundary = mapSize / 2 - wallThickness;
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Движение относительно поворота камеры
+            // Анимация текстуры конвейера (зрительно он движется)
+            conveyorTex.offset.y -= 0.02;
+
+            // Движение игрока относительно камеры
             if (moveVector.x !== 0 || moveVector.z !== 0) {
-                // Получаем угол поворота камеры по Y
                 const cameraAngle = Math.atan2(
                     camera.position.x - player.position.x,
                     camera.position.z - player.position.z
                 );
 
-                // Вычисляем куда идти относительно камеры
                 const moveX = moveVector.x * Math.cos(cameraAngle) + moveVector.z * Math.sin(cameraAngle);
                 const moveZ = -moveVector.x * Math.sin(cameraAngle) + moveVector.z * Math.cos(cameraAngle);
 
@@ -195,34 +245,52 @@
             velocityY += gravity;
             player.position.y += velocityY;
 
-            // Столкновение с полом
-            if (player.position.y <= 1) { // 1 = половина высоты игрока (2 / 2)
-                player.position.y = 1;
+            // Столкновение с полом (высота игрока 2.4, половина = 1.2)
+            let groundLevel = 1.2; 
+            
+            // Если игрок стоит на конвейере (он немного приподнят)
+            if (Math.abs(player.position.x) < conveyorWidth / 2 + 0.6) {
+                groundLevel = 1.2 + 0.5; // Высота игрока + высота конвейера
+            }
+
+            if (player.position.y <= groundLevel) {
+                player.position.y = groundLevel;
                 velocityY = 0;
                 isGrounded = true;
             }
 
-            // Столкновение со стенами (ограничиваем выход за карту)
+            // Границы карты (чтобы не уйти сквозь стены)
             if (player.position.x > boundary) player.position.x = boundary;
             if (player.position.x < -boundary) player.position.x = -boundary;
             if (player.position.z > boundary) player.position.z = boundary;
             if (player.position.z < -boundary) player.position.z = -boundary;
 
-            // Камера всегда следует за игроком
+            // --- ПРАВИЛЬНОЕ СЛЕДОВАНИЕ КАМЕРЫ ---
+            // Вычисляем, на сколько сдвинулся игрок в этом кадре
+            const deltaX = player.position.x - prevPlayerPos.x;
+            const deltaY = player.position.y - prevPlayerPos.y;
+            const deltaZ = player.position.z - prevPlayerPos.z;
+
+            // Сдвигаем камеру ровно на столько же (чтобы она летела за ним)
+            camera.position.x += deltaX;
+            camera.position.y += deltaY;
+            camera.position.z += deltaZ;
+
+            // Обновляем цель и запоминаем позицию
             controls.target.copy(player.position);
             controls.update();
+            prevPlayerPos.copy(player.position);
 
             renderer.render(scene, camera);
         }
 
-        // Адаптация под размер экрана при повороте телефона
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        animate(); // Запуск игры
+        animate();
     </script>
 </body>
 </html>
