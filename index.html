@@ -54,24 +54,23 @@
     <script>
         // --- 1. БАЗОВАЯ НАСТРОЙКА ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Небо
-        scene.fog = new THREE.Fog(0x87CEEB, 20, 70); // Легкий туман для реализма
+        scene.background = new THREE.Color(0x87CEEB); 
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 70); 
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Включаем тени
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Мягкие тени
+        renderer.shadowMap.enabled = true; 
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
         document.body.appendChild(renderer.domElement);
 
-        // --- ОСВЕЩЕНИЕ (для реализма) ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(20, 40, 20);
-        dirLight.castShadow = true; // Свет отбрасывает тени
+        dirLight.castShadow = true; 
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.near = 0.5;
@@ -82,7 +81,7 @@
         dirLight.shadow.camera.bottom = -50;
         scene.add(dirLight);
 
-        // --- ГЕНЕРАТОРЫ ТЕКСТУР (без скачивания файлов) ---
+        // --- ГЕНЕРАТОРЫ ТЕКСТУР ---
         function createGrassTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 256;
@@ -116,30 +115,24 @@
             return tex;
         }
 
-        // --- 2. СОЗДАНИЕ КАРТЫ ---
-        const mapSize = 80; // Карта стала в 2 раза больше
+        // --- 2. СОЗДАНИЕ КАРТЫ И ОБЪЕКТОВ ---
+        const mapSize = 80; 
 
         // Земля
         const floorGeo = new THREE.PlaneGeometry(mapSize, mapSize);
-        const floorMat = new THREE.MeshStandardMaterial({ 
-            map: createGrassTexture(),
-            roughness: 0.8
-        });
+        const floorMat = new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 0.8 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true; // Земля принимает тени
+        floor.receiveShadow = true; 
         scene.add(floor);
 
-        // Конвейер (От стены А до стены Б)
+        // Конвейер
         const conveyorWidth = 8;
         const conveyorGeo = new THREE.BoxGeometry(conveyorWidth, 0.5, mapSize);
         const conveyorTex = createConveyorTexture();
-        const conveyorMat = new THREE.MeshStandardMaterial({ 
-            map: conveyorTex,
-            roughness: 0.5
-        });
+        const conveyorMat = new THREE.MeshStandardMaterial({ map: conveyorTex, roughness: 0.5 });
         const conveyor = new THREE.Mesh(conveyorGeo, conveyorMat);
-        conveyor.position.set(0, 0.25, 0); // По центру всей карты
+        conveyor.position.set(0, 0.25, 0); 
         conveyor.receiveShadow = true;
         conveyor.castShadow = true;
         scene.add(conveyor);
@@ -157,34 +150,106 @@
             scene.add(wall);
         }
 
-        // Расставляем стены по краям (mapSize 80 = от -40 до 40)
-        createWall(0, -mapSize/2, mapSize, wallThickness); // Север
-        createWall(0, mapSize/2, mapSize, wallThickness);  // Юг
-        createWall(-mapSize/2, 0, wallThickness, mapSize); // Запад
-        createWall(mapSize/2, 0, wallThickness, mapSize);  // Восток
+        createWall(0, -mapSize/2, mapSize, wallThickness); 
+        createWall(0, mapSize/2, mapSize, wallThickness);  
+        createWall(-mapSize/2, 0, wallThickness, mapSize); 
+        createWall(mapSize/2, 0, wallThickness, mapSize);  
+
+        // --- НОВОЕ: БАЗЫ И СЛОТЫ ---
+        // Массив для хранения данных о базах (пригодится позже)
+        const gameBases = []; 
+
+        function createBase(x, z, teamColor) {
+            // 1. Сама бетонная площадка базы (очень тонкая, чтобы не мешать бегать)
+            const baseWidth = 14;
+            const baseDepth = 12;
+            const baseHeight = 0.1;
+            
+            const baseGeo = new THREE.BoxGeometry(baseWidth, baseHeight, baseDepth);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.9 }); // Серый бетон
+            const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            baseMesh.position.set(x, baseHeight / 2, z);
+            baseMesh.receiveShadow = true;
+            scene.add(baseMesh);
+
+            // Окантовка цветом команды (Синие слева, Красные справа)
+            const borderGeo = new THREE.BoxGeometry(baseWidth + 0.4, baseHeight - 0.05, baseDepth + 0.4);
+            const borderMat = new THREE.MeshBasicMaterial({ color: teamColor });
+            const borderMesh = new THREE.Mesh(borderGeo, borderMat);
+            borderMesh.position.set(x, baseHeight / 2 - 0.02, z);
+            scene.add(borderMesh);
+
+            // 2. Создаем 10 слотов (2 ряда по 5 штук)
+            const slots = [];
+            const slotSize = 1.5;
+            const slotGeo = new THREE.PlaneGeometry(slotSize, slotSize);
+            const slotMat = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff, 
+                opacity: 0.4, 
+                transparent: true 
+            });
+
+            // Математика для ровной расстановки сеткой 5x2
+            const startX = x - (baseWidth / 2) + 2.5;
+            const startZ = z - (baseDepth / 2) + 3.5;
+            const spacingX = 2.2;
+            const spacingZ = 5;
+
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const slot = new THREE.Mesh(slotGeo, slotMat);
+                    slot.rotation.x = -Math.PI / 2; // Кладем плашмя
+                    // Поднимаем чуть-чуть выше базы, чтобы текстуры не мерцали
+                    slot.position.set(startX + col * spacingX, baseHeight + 0.02, startZ + row * spacingZ);
+                    scene.add(slot);
+                    
+                    // Сохраняем координаты слота для будущих "brainrot"
+                    slots.push({
+                        x: slot.position.x,
+                        y: slot.position.y,
+                        z: slot.position.z,
+                        isOccupied: false
+                    });
+                }
+            }
+
+            // Записываем базу в память игры
+            gameBases.push({ x, z, teamColor, slots });
+        }
+
+        // Расставляем 4 базы СЛЕВА (Синяя команда)
+        createBase(-22, -30, 0x0055ff);
+        createBase(-22, -10, 0x0055ff);
+        createBase(-22, 10, 0x0055ff);
+        createBase(-22, 30, 0x0055ff);
+
+        // Расставляем 4 базы СПРАВА (Красная команда)
+        createBase(22, -30, 0xff2200);
+        createBase(22, -10, 0xff2200);
+        createBase(22, 10, 0xff2200);
+        createBase(22, 30, 0xff2200);
+
 
         // --- 3. ИГРОК И КАМЕРА ---
         const playerGeo = new THREE.BoxGeometry(1.2, 2.4, 1.2);
         const playerMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.3 });
         const player = new THREE.Mesh(playerGeo, playerMat);
         player.position.set(10, 1.2, 20);
-        player.castShadow = true; // Игрок отбрасывает тень
+        player.castShadow = true; 
         scene.add(player);
 
-        // Настройка камеры
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(10, 6, 28); // Камера сзади и сверху
+        camera.position.set(10, 6, 28); 
         controls.enablePan = false;
         controls.maxPolarAngle = Math.PI / 2 - 0.1; 
         controls.minDistance = 4; 
         controls.maxDistance = 15;
 
-        // Переменная для сохранения прошлой позиции игрока (нужна для камеры)
         let prevPlayerPos = player.position.clone();
 
         // --- 4. УПРАВЛЕНИЕ ---
         let moveVector = { x: 0, z: 0 };
-        const speed = 0.25; // Слегка увеличили скорость из-за большой карты
+        const speed = 0.25; 
 
         const joystickManager = nipplejs.create({
             zone: document.getElementById('joystick-zone'),
@@ -224,10 +289,8 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Анимация текстуры конвейера (зрительно он движется)
             conveyorTex.offset.y -= 0.02;
 
-            // Движение игрока относительно камеры
             if (moveVector.x !== 0 || moveVector.z !== 0) {
                 const cameraAngle = Math.atan2(
                     camera.position.x - player.position.x,
@@ -241,16 +304,13 @@
                 player.position.z += moveZ * speed;
             }
 
-            // Гравитация и прыжок
             velocityY += gravity;
             player.position.y += velocityY;
 
-            // Столкновение с полом (высота игрока 2.4, половина = 1.2)
             let groundLevel = 1.2; 
             
-            // Если игрок стоит на конвейере (он немного приподнят)
             if (Math.abs(player.position.x) < conveyorWidth / 2 + 0.6) {
-                groundLevel = 1.2 + 0.5; // Высота игрока + высота конвейера
+                groundLevel = 1.2 + 0.5; 
             }
 
             if (player.position.y <= groundLevel) {
@@ -259,24 +319,19 @@
                 isGrounded = true;
             }
 
-            // Границы карты (чтобы не уйти сквозь стены)
             if (player.position.x > boundary) player.position.x = boundary;
             if (player.position.x < -boundary) player.position.x = -boundary;
             if (player.position.z > boundary) player.position.z = boundary;
             if (player.position.z < -boundary) player.position.z = -boundary;
 
-            // --- ПРАВИЛЬНОЕ СЛЕДОВАНИЕ КАМЕРЫ ---
-            // Вычисляем, на сколько сдвинулся игрок в этом кадре
             const deltaX = player.position.x - prevPlayerPos.x;
             const deltaY = player.position.y - prevPlayerPos.y;
             const deltaZ = player.position.z - prevPlayerPos.z;
 
-            // Сдвигаем камеру ровно на столько же (чтобы она летела за ним)
             camera.position.x += deltaX;
             camera.position.y += deltaY;
             camera.position.z += deltaZ;
 
-            // Обновляем цель и запоминаем позицию
             controls.target.copy(player.position);
             controls.update();
             prevPlayerPos.copy(player.position);
