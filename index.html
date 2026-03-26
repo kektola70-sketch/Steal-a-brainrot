@@ -8,464 +8,320 @@
         body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: Arial, sans-serif; user-select: none; }
         canvas { display: block; }
         
-        /* UI Экономики и Инвентаря */
+        /* МЕНЮ ЛОББИ */
+        #login-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+        }
+        #login-box {
+            background: rgba(0, 0, 0, 0.8); padding: 30px; border-radius: 15px; border: 3px solid #00ff00;
+            text-align: center; color: white; width: 80%; max-width: 300px;
+        }
+        #login-box h1 { margin-top: 0; color: #00ff00; font-size: 28px; }
+        #nickname-input { width: 90%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: none; font-size: 18px; text-align: center; font-weight: bold; }
+        #play-btn { background: #00ff00; color: black; border: none; padding: 10px 30px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        #play-btn:active { background: #00cc00; }
+
+        /* ИГРОВОЙ UI */
+        #game-ui { display: none; }
         #top-bar { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; gap: 10px; }
         .ui-box { background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 8px; border: 2px solid white; font-weight: bold; }
         #money-txt { color: #00ff00; font-size: 20px; }
-        
-        /* Кнопки Магазина */
         #shop-btn { background: #ffaa00; color: black; border: 2px solid white; padding: 10px 20px; font-weight: bold; border-radius: 8px; font-size: 16px; cursor: pointer; }
         #shop-panel { display: none; position: absolute; top: 60px; left: 10px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px; border: 2px solid white; color: white; z-index: 20; }
-        .shop-item { margin-bottom: 10px; border-bottom: 1px solid gray; padding-bottom: 10px; }
-        .buy-item-btn { background: #00ff00; color: black; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; border-radius: 5px; }
-
-        /* Управление */
+        .buy-item-btn { background: #00ff00; color: black; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; border-radius: 5px; margin-top: 5px;}
+        
         #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; z-index: 10; }
-        
         .action-btn { position: absolute; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.5); border: 2px solid white; border-radius: 50%; font-size: 12px; font-weight: bold; color: black; z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; }
-        .action-btn:active { background: rgba(255, 255, 255, 0.9); }
-        
         #jump-btn { bottom: 30px; right: 20px; width: 70px; height: 70px; font-size: 14px;}
         #hit-btn { bottom: 110px; right: 20px; background: rgba(255, 0, 0, 0.5); color: white;}
         #trap-btn { bottom: 30px; right: 100px; }
 
-        /* Состояние переноски */
         #carry-status { position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; padding: 10px; border-radius: 8px; font-weight: bold; display: none; border: 2px solid white; z-index: 10; }
-
-        /* Универсальная кнопка действий над объектом */
         #action-ui { position: absolute; display: none; width: 140px; height: 50px; background: rgba(0, 0, 0, 0.8); border: 2px solid white; border-radius: 10px; color: white; font-weight: bold; font-size: 16px; text-align: center; line-height: 50px; transform: translate(-50%, -50%); z-index: 20; overflow: hidden; pointer-events: auto; }
         #action-progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(0, 255, 0, 0.5); z-index: -1; }
-        
-        /* Экран заморозки */
         #freeze-screen { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,255,0.3); z-index: 50; justify-content: center; align-items: center; color: white; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0 #000; }
     </style>
 </head>
 <body>
+
+    <div id="login-screen">
+        <div id="login-box">
+            <h1>Steal a Brainrot</h1>
+            <p style="color: #aaa; font-size: 14px;">SERVER: GLOBAL [EU]</p>
+            <input type="text" id="nickname-input" placeholder="Enter Nickname" maxlength="12">
+            <button id="play-btn">PLAY</button>
+            <p id="auth-status" style="font-size: 12px; color: yellow; margin-top: 10px;">Connecting...</p>
+        </div>
+    </div>
+
     <div id="freeze-screen">TRAPPED!</div>
 
-    <div id="top-bar">
-        <div class="ui-box">
-            <span id="money-txt">0$</span><br>
-            <span id="income-txt" style="font-size:12px; color:#ccc;">+0$/sec</span>
+    <div id="game-ui">
+        <div id="top-bar">
+            <div class="ui-box">
+                <span id="money-txt">0$</span><br>
+                <span id="income-txt" style="font-size:12px; color:#ccc;">+0$/sec</span>
+            </div>
+            <button id="shop-btn" onclick="document.getElementById('shop-panel').style.display='block'">SHOP</button>
         </div>
-        <button id="shop-btn">SHOP</button>
+
+        <div id="carry-status">CARRYING BRAINROT</div>
+
+        <div id="shop-panel">
+            <h3>SHOP</h3>
+            <div style="border-bottom:1px solid gray; padding-bottom:5px;"><b>Big Glove</b> - 500$<br><button class="buy-item-btn" onclick="buyShopItem('big_glove', 500)">BUY</button></div>
+            <div style="margin-top:5px;"><b>Trap</b> - 100$ (Max:5)<br><button class="buy-item-btn" onclick="buyShopItem('trap', 100)">BUY</button></div>
+            <p>Traps: <span id="inv-traps" style="color:yellow">0</span></p>
+            <button onclick="document.getElementById('shop-panel').style.display='none'">Close</button>
+        </div>
+        
+        <div id="action-ui"><div id="action-progress"></div><span id="action-text">ACTION</span></div>
+
+        <div id="joystick-zone"></div>
+        <div id="trap-btn" class="action-btn">TRAP</div>
+        <div id="hit-btn" class="action-btn">HIT</div>
+        <div id="jump-btn" class="action-btn">JUMP</div>
     </div>
 
-    <div id="carry-status">CARRYING BRAINROT<br><span style="font-size: 12px">Take it to your base!</span></div>
-
-    <div id="shop-panel">
-        <h3>SHOP & INVENTORY</h3>
-        <div class="shop-item">
-            <b>Big Glove</b> - 500$<br>Knocks enemies further.<br>
-            <button class="buy-item-btn" onclick="buyShopItem('big_glove', 500)">BUY</button>
-        </div>
-        <div class="shop-item">
-            <b>Trap</b> - 100$<br>Freezes for 10s. (Max: 5)<br>
-            <button class="buy-item-btn" onclick="buyShopItem('trap', 100)">BUY</button>
-        </div>
-        <hr>
-        <p>Weapon: <span id="inv-weapon" style="color:yellow">Normal Glove</span></p>
-        <p>Traps: <span id="inv-traps" style="color:yellow">0</span> / 5</p>
-        <button onclick="document.getElementById('shop-panel').style.display='none'" style="margin-top:10px;">Close</button>
-    </div>
-    
-    <div id="action-ui">
-        <div id="action-progress"></div>
-        <span id="action-text">ACTION</span>
-    </div>
-
-    <div id="joystick-zone"></div>
-    <div id="trap-btn" class="action-btn">SET<br>TRAP</div>
-    <div id="hit-btn" class="action-btn">HIT</div>
-    <div id="jump-btn" class="action-btn">JUMP</div>
-
+    <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    
+    <!-- НОВЫЙ МОДУЛЬНЫЙ FIREBASE v12 И КОД ИГРЫ -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+        // Импортируем нужные функции для Базы Данных
+        import { getDatabase, ref, set, onValue, update, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
-    <script>
-        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
-        let money = 0; let incomePerSec = 0;
-        let weapon = 'normal_glove'; let trapsCount = 0;
-        let isFrozen = false;
-        let carriedBrainrot = null; // Что мы сейчас несем
-        
-        function updateUI() {
-            document.getElementById('money-txt').innerText = money + '$';
-            document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec';
-            document.getElementById('inv-traps').innerText = trapsCount;
-            document.getElementById('inv-weapon').innerText = weapon === 'big_glove' ? 'Big Glove' : 'Normal Glove';
-        }
-        setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); } }, 1000);
-
-        document.getElementById('shop-btn').onclick = () => {
-            const sp = document.getElementById('shop-panel');
-            sp.style.display = sp.style.display === 'block' ? 'none' : 'block';
+        // ТВОЯ КОНФИГУРАЦИЯ (С добавлением ссылки на БД для надежности)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAmPLW5-F628bAQG4mG_V7JXIXcyMs1nfA",
+            authDomain: "steal-a-brainrot-20fb8.firebaseapp.com",
+            databaseURL: "https://steal-a-brainrot-20fb8-default-rtdb.firebaseio.com", // Ссылка на твою базу данных
+            projectId: "steal-a-brainrot-20fb8",
+            storageBucket: "steal-a-brainrot-20fb8.firebasestorage.app",
+            messagingSenderId: "743775817141",
+            appId: "1:743775817141:web:f0e4b0481ca3ab20b29dfc"
         };
 
-        function buyShopItem(item, price) {
-            if(money >= price) {
-                if(item === 'trap' && trapsCount < 5) { money -= price; trapsCount++; }
-                else if(item === 'big_glove' && weapon !== 'big_glove') { money -= price; weapon = 'big_glove'; buildPlayerModel(); } // Перерисовываем модель с большой перчаткой
-                updateUI();
-            }
-        }
+        // Инициализация
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-        // --- НАСТРОЙКА THREE.JS ---
-        const scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEEB); 
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(20, 40, 20); dirLight.castShadow = true; scene.add(dirLight);
+        let myPlayerId = null;
+        let nickname = "Guest";
 
-        // Текстуры
-        function createTex(color, dotColor, isConveyor) {
-            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d');
-            ctx.fillStyle = color; ctx.fillRect(0,0,256,256);
-            if(isConveyor) { ctx.fillStyle = dotColor; for(let i=-256; i<512; i+=64) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i+128); ctx.lineTo(256, i+160); ctx.lineTo(0, i+32); ctx.fill(); } }
-            else { for(let i=0; i<8000; i++) { ctx.fillStyle = Math.random() > 0.5 ? dotColor : color; ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2); } }
-            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; return tex;
-        }
-        
-        const mapSize = 80; 
-        const floorTex = createTex('#3a5f0b', '#4c7a11', false); floorTex.repeat.set(30, 30);
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(mapSize, mapSize), new THREE.MeshStandardMaterial({ map: floorTex })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+        document.getElementById('auth-status').innerText = "Connected to Server";
+        document.getElementById('auth-status').style.color = "#00ff00";
 
-        const convTex = createTex('#222', '#aa0000', true); convTex.repeat.set(1, 20);
-        const conveyor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, mapSize), new THREE.MeshStandardMaterial({ map: convTex })); conveyor.position.set(0, 0.25, 0); conveyor.receiveShadow = true; scene.add(conveyor);
-
-        // --- СОЗДАНИЕ ИГРОКА (НОВАЯ 3D МОДЕЛЬ) ---
-        let player, stickMesh, gloveMesh;
-        function buildPlayerModel() {
-            if(player) scene.remove(player);
-            player = new THREE.Group();
-            const mBlue = new THREE.MeshStandardMaterial({color: 0x0055ff}); const mYellow = new THREE.MeshStandardMaterial({color: 0xffff00}); const mWood = new THREE.MeshStandardMaterial({color: 0x8b4513}); const mRed = new THREE.MeshStandardMaterial({color: 0xff0000});
+        // --- ЛОГИКА ВХОДА ---
+        document.getElementById('play-btn').onclick = () => {
+            const nameInput = document.getElementById('nickname-input').value.trim();
+            if(nameInput.length < 3) { alert("Nickname must be at least 3 characters!"); return; }
+            nickname = nameInput;
             
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.6), mBlue); torso.position.y = 1.2;
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), mYellow); head.position.y = 2.2;
-            const legL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), mYellow); legL.position.set(-0.25, 0.3, 0);
-            const legR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), mYellow); legR.position.set(0.25, 0.3, 0);
-            const armL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.0, 0.4), mYellow); armL.position.set(-0.7, 1.3, 0);
-            const armR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.0, 0.4), mYellow); armR.position.set(0.7, 1.3, 0);
-
-            // Оружие в правой руке
-            stickMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5), mWood);
-            stickMesh.position.set(0, -0.5, 0.5); stickMesh.rotation.x = Math.PI/2;
+            // Создаем уникальный ID игрока
+            myPlayerId = "player_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
             
-            const gloveSize = weapon === 'big_glove' ? 0.6 : 0.3;
-            gloveMesh = new THREE.Mesh(new THREE.SphereGeometry(gloveSize), mRed);
-            gloveMesh.position.set(0, 0.8, 0); stickMesh.add(gloveMesh);
-            armR.add(stickMesh);
-
-            player.add(torso, head, legL, legR, armL, armR);
-            player.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
-            player.position.set(10, 0, 20); scene.add(player);
-        }
-        buildPlayerModel();
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(10, 6, 28); controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; 
-        let prevPlayerPos = player.position.clone();
-
-        // --- БАЗЫ ---
-        const gameBases = [];
-        let playerBaseIndex = Math.floor(Math.random() * 8); // Случайная база для игрока
-
-        function createTextSprite(text, color, yOffset) {
-            const can = document.createElement('canvas'); can.width = 512; can.height = 128; const ctx = can.getContext('2d');
-            ctx.textAlign = 'center'; ctx.fillStyle = color; ctx.font = 'bold 40px Arial'; ctx.fillText(text, 256, 70);
-            const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(can), transparent: true }));
-            sp.position.y = yOffset; sp.scale.set(6, 1.5, 1); return sp;
-        }
-
-        function createBase(index, x, z, teamColor, facingRight) {
-            const baseObj = { x, z, slots: [], owner: index === playerBaseIndex ? 'player' : 'bot', activeBrainrots: [] };
+            // Записываем себя в БД
+            const myPlayerRef = ref(db, 'players/' + myPlayerId);
+            set(myPlayerRef, { name: nickname, x: 10, y: 0, z: 20, rotY: 0 });
             
-            const floor = new THREE.Mesh(new THREE.BoxGeometry(14, 0.1, 12), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
-            floor.position.set(x, 0.05, z); floor.receiveShadow = true; scene.add(floor);
-            
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
-            const roofMat = new THREE.MeshStandardMaterial({ color: teamColor });
-            
-            // Задняя стена
-            const backWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 5, 12), wallMat);
-            backWall.position.set(facingRight ? x + 6.75 : x - 6.75, 2.5, z); scene.add(backWall);
-            
-            // Боковые стены
-            const side1 = new THREE.Mesh(new THREE.BoxGeometry(14, 5, 0.5), wallMat); side1.position.set(x, 2.5, z - 5.75); scene.add(side1);
-            const side2 = new THREE.Mesh(new THREE.BoxGeometry(14, 5, 0.5), wallMat); side2.position.set(x, 2.5, z + 5.75); scene.add(side2);
+            // Если вкладка закрывается - удаляем игрока с сервера
+            onDisconnect(myPlayerRef).remove();
 
-            // Крыша
-            const roof = new THREE.Mesh(new THREE.BoxGeometry(14.5, 0.5, 12.5), roofMat); roof.position.set(x, 5.25, z); scene.add(roof);
-
-            // Табличка
-            const name = baseObj.owner === 'player' ? "MY BASE" : "BOT BASE";
-            const color = baseObj.owner === 'player' ? "#00ff00" : "#ff4444";
-            const sign = createTextSprite(name, color, 7); sign.position.x = x; sign.position.z = z; scene.add(sign);
-
-            // Кнопка Лазера (Защита)
-            const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.2), new THREE.MeshStandardMaterial({color: 0xffff00}));
-            btn.position.set(facingRight ? x + 5 : x - 5, 0.1, z); scene.add(btn);
-            baseObj.btnMesh = btn; baseObj.laserActive = false; baseObj.laserTimer = 0;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
             
-            // Лазерная стена (невидимая по умолчанию)
-            const laser = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5, 11), new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.5}));
-            laser.position.set(facingRight ? x - 6.8 : x + 6.8, 2.5, z); laser.visible = false; scene.add(laser);
-            baseObj.laserMesh = laser;
+            // Запускаем 3D мир
+            startGame(); 
+        };
 
-            // Слоты
-            const startX = facingRight ? x + 4 : x - 4;
-            const dir = facingRight ? -1 : 1;
-            for (let row = 0; row < 2; row++) {
-                for (let col = 0; col < 5; col++) {
-                    baseObj.slots.push({
-                        x: startX + (col * 2.2 * dir), y: 0.1, z: (z - 2.5) + (row * 5),
-                        isOccupied: false, brMesh: null
-                    });
+        // --- ОСНОВНОЙ 3D КОД ИГРЫ ---
+        function startGame() {
+            let money = 0; let incomePerSec = 0; let weapon = 'normal_glove'; let trapsCount = 0;
+            let isFrozen = false; let carriedBrainrot = null;
+            
+            function updateUI() { document.getElementById('money-txt').innerText = money + '$'; document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec'; document.getElementById('inv-traps').innerText = trapsCount; }
+            setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); } }, 1000);
+
+            // Глобальная функция для магазина (т.к. мы в type="module")
+            window.buyShopItem = function(item, price) {
+                if(money >= price) {
+                    if(item === 'trap' && trapsCount < 5) { money -= price; trapsCount++; }
+                    else if(item === 'big_glove' && weapon !== 'big_glove') { money -= price; weapon = 'big_glove'; buildMyPlayerModel(); }
+                    updateUI();
                 }
-            }
-            gameBases.push(baseObj);
-        }
+            };
 
-        // 4 слева (смотрят вправо), 4 справа (смотрят влево)
-        createBase(0, -30, -30, 0x0055ff, true); createBase(1, -30, -10, 0x0055ff, true); createBase(2, -30, 10, 0x0055ff, true); createBase(3, -30, 30, 0x0055ff, true);
-        createBase(4, 30, -30, 0xff2200, false); createBase(5, 30, -10, 0xff2200, false); createBase(6, 30, 10, 0xff2200, false); createBase(7, 30, 30, 0xff2200, false);
+            const scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 20, 70);
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(20, 40, 20); dirLight.castShadow = true; scene.add(dirLight);
 
-        // --- БРЕЙНРОТЫ ---
-        const convBrainrots = [];
-        
-        function buildBrainrotModel(type) {
-            const group = new THREE.Group();
-            const mY=new THREE.MeshStandardMaterial({color:0xffff00}); const mG=new THREE.MeshStandardMaterial({color:0x00aa00});
-            const mB=new THREE.MeshStandardMaterial({color:0x0055ff}); const mO=new THREE.MeshStandardMaterial({color:0xffa500});
-            const mK=new THREE.MeshStandardMaterial({color:0x6b8e23}); const mGr=new THREE.MeshStandardMaterial({color:0x888888});
-            const mBl=new THREE.MeshStandardMaterial({color:0x111111});
+            function createTex(c, dc, isC) { const cv = document.createElement('canvas'); cv.width=256; cv.height=256; const ctx = cv.getContext('2d'); ctx.fillStyle=c; ctx.fillRect(0,0,256,256); if(isC){ ctx.fillStyle=dc; for(let i=-256;i<512;i+=64){ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(256,i+128); ctx.lineTo(256,i+160); ctx.lineTo(0,i+32); ctx.fill();} }else{ for(let i=0;i<8000;i++){ctx.fillStyle=Math.random()>0.5?dc:c; ctx.fillRect(Math.random()*256,Math.random()*256,2,2);} } const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; }
+            
+            const mapSize = 80; 
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(mapSize, mapSize), new THREE.MeshStandardMaterial({ map: createTex('#3a5f0b', '#4c7a11', false) })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
 
-            if (type === 'noobini') {
-                const legs=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mB); legs.position.y=0.4;
-                const torso=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mG); torso.position.y=1.2;
-                const head=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),mY); head.position.y=1.9;
-                const pizza=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.1,16),mO); pizza.position.y=2.25;
-                group.add(legs,torso,head,pizza); group.typeData = { name:'Noobini', price:0, inc:1 };
-            } else {
-                const body=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,16),mK); body.position.y=0.9; body.scale.set(1,1.1,1);
-                const head=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.3,0.4),mGr); head.position.set(0,0.9,0.6);
-                const mask=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.12,0.1),mBl); mask.position.set(0,0.92,0.78);
-                group.add(body,head,mask); group.typeData = { name:'Pipi Kiwi', price:100, inc:2 };
-            }
-            group.traverse(c=>{if(c.isMesh)c.castShadow=true;});
-            return group;
-        }
+            const convWidth = 8; const convTex = createTex('#222', '#aa0000', true); convTex.repeat.set(1, 20);
+            const conveyor = new THREE.Mesh(new THREE.BoxGeometry(convWidth, 0.5, mapSize), new THREE.MeshStandardMaterial({ map: convTex })); conveyor.position.set(0, 0.25, 0); conveyor.receiveShadow = true; scene.add(conveyor);
 
-        setInterval(() => {
-            const br = buildBrainrotModel(Math.random()>0.5 ? 'noobini' : 'pipikiwi');
-            br.position.set((Math.random() - 0.5) * 4, 0.5, -mapSize/2); 
-            scene.add(br); convBrainrots.push({ mesh: br, state: 'conveyor' });
-        }, 3000);
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666 }); const wH = 6; const wT = 2;
+            function mkWall(x,z,w,d){ const wall = new THREE.Mesh(new THREE.BoxGeometry(w,wH,d),wallMat); wall.position.set(x,wH/2,z); wall.receiveShadow=wall.castShadow=true; scene.add(wall); }
+            mkWall(-mapSize/2, 0, wT, mapSize); mkWall(mapSize/2, 0, wT, mapSize); 
+            const sideW = (mapSize - convWidth) / 2;
+            mkWall(-convWidth/2 - sideW/2, -mapSize/2, sideW, wT); mkWall(convWidth/2 + sideW/2, -mapSize/2, sideW, wT); 
+            mkWall(-convWidth/2 - sideW/2, mapSize/2, sideW, wT); mkWall(convWidth/2 + sideW/2, mapSize/2, sideW, wT);   
+            const voidMat = new THREE.MeshBasicMaterial({color: 0x000000}); const voidGeo = new THREE.PlaneGeometry(convWidth, wH);
+            const vN = new THREE.Mesh(voidGeo, voidMat); vN.position.set(0, wH/2, -mapSize/2 + 0.1); scene.add(vN);
+            const vS = new THREE.Mesh(voidGeo, voidMat); vS.position.set(0, wH/2, mapSize/2 - 0.1); vS.rotation.y = Math.PI; scene.add(vS);
 
-        // Функция: Разместить Брейнрот на Базе
-        function placeOnBase(br, base) {
-            let slot = base.slots.find(s => !s.isOccupied);
-            if(slot) {
-                br.position.set(slot.x, slot.y, slot.z);
-                slot.isOccupied = true; slot.brMesh = br;
-                base.activeBrainrots.push(br);
-                // Если это база игрока, увеличиваем доход
-                if(base.owner === 'player') { incomePerSec += br.typeData.inc; updateUI(); }
-            }
-        }
+            let player, stick; 
+            function buildMyPlayerModel() {
+                if(player) scene.remove(player); player = new THREE.Group();
+                const mBl=new THREE.MeshStandardMaterial({color:0x0055ff}); const mY=new THREE.MeshStandardMaterial({color:0xffff00}); const mW=new THREE.MeshStandardMaterial({color:0x8b4513}); const mR=new THREE.MeshStandardMaterial({color:0xff0000});
+                const t=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,0.6),mBl); t.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.8),mY); h.position.y=2.2;
+                const lL=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.6,0.4),mY); lL.position.set(-0.25,0.3,0); const lR=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.6,0.4),mY); lR.position.set(0.25,0.3,0);
+                const aL=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.4),mY); aL.position.set(-0.7,1.3,0); const aR=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.4),mY); aR.position.set(0.7,1.3,0);
+                stick=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.5),mW); stick.position.set(0,-0.5,0.5); stick.rotation.x=Math.PI/2;
+                const gM=new THREE.Mesh(new THREE.SphereGeometry(weapon==='big_glove'?0.6:0.3),mR); gM.position.set(0,0.8,0); stick.add(gM); aR.add(stick);
+                player.add(t,h,lL,lR,aL,aR); player.traverse(c=>{if(c.isMesh){c.castShadow=c.receiveShadow=true;}});
+                player.position.set(10,0,20); scene.add(player);
 
-        // --- УПРАВЛЕНИЕ, UI И ДЕЙСТВИЯ ---
-        let moveVec = { x: 0, z: 0 };
-        nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'static', position: { left: '70px', bottom: '70px' }, color: 'white' })
-        .on('move', (e, d) => { moveVec.x = Math.cos(d.angle.radian)*Math.min(d.force,1); moveVec.z = -Math.sin(d.angle.radian)*Math.min(d.force,1); })
-        .on('end', () => { moveVec = {x:0, z:0}; });
+                const cN = document.createElement('canvas'); cN.width=256; cN.height=64; const ctxN=cN.getContext('2d');
+                ctxN.textAlign='center'; ctxN.fillStyle='#00ff00'; ctxN.font='bold 30px Arial'; ctxN.fillText(nickname, 128, 40);
+                const nS = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(cN), transparent: true}));
+                nS.position.set(0, 3, 0); nS.scale.set(3, 0.75, 1); player.add(nS);
+            } 
+            buildMyPlayerModel();
 
-        let velY = 0; let isGnd = true;
-        document.getElementById('jump-btn').ontouchstart = (e) => { e.preventDefault(); if(isGnd && !isFrozen){ velY = 0.4; isGnd = false; } };
-
-        // Анимация удара
-        let isHitting = false;
-        document.getElementById('hit-btn').ontouchstart = (e) => {
-            e.preventDefault();
-            if(!isHitting && !isFrozen) {
-                isHitting = true;
-                let startRot = stickMesh.rotation.z;
-                // Простая анимация кадрами
-                let t = 0;
-                let hitAnim = setInterval(() => {
-                    t += 0.1;
-                    stickMesh.rotation.z = startRot - Math.sin(t * Math.PI) * 1.5;
-                    if(t >= 1) { clearInterval(hitAnim); stickMesh.rotation.z = startRot; isHitting = false; }
-                }, 16);
-            }
-        };
-
-        // Капканы
-        const traps = [];
-        document.getElementById('trap-btn').ontouchstart = (e) => {
-            e.preventDefault();
-            if(trapsCount > 0 && !isFrozen) {
-                trapsCount--; updateUI();
-                const trap = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.1), new THREE.MeshStandardMaterial({color: 0x333333}));
-                trap.position.copy(player.position); trap.position.y = 0.1; scene.add(trap);
-                traps.push(trap);
-            }
-        };
-
-        // --- ЛОГИКА ВЗАИМОДЕЙСТВИЯ (КНОПКА ACTION) ---
-        const actionUI = document.getElementById('action-ui');
-        const actProg = document.getElementById('action-progress');
-        const actText = document.getElementById('action-text');
-        
-        let targetObj = null; let actionType = ''; let holdStart = 0; let isHolding = false;
-
-        function endAction() { isHolding = false; actProg.style.width = '0%'; }
-        actionUI.ontouchstart = actionUI.onmousedown = (e) => { e.preventDefault(); if(targetObj && !isFrozen) { isHolding = true; holdStart = Date.now(); actText.innerText = 'WAIT...'; }};
-        window.ontouchend = window.onmouseup = endAction;
-
-        // --- ИГРОВОЙ ЦИКЛ ---
-        function animate() {
-            requestAnimationFrame(animate);
-            if(isFrozen) return renderer.render(scene, camera); // Заморозка капканом
-
-            convTex.offset.y -= 0.008;
-
-            // Движение конвейера
-            for (let i = convBrainrots.length - 1; i >= 0; i--) {
-                const b = convBrainrots[i];
-                if(b.state === 'conveyor') {
-                    b.mesh.position.z += 0.08; 
-                    if(b.mesh.position.z > mapSize/2) { scene.remove(b.mesh); convBrainrots.splice(i, 1); }
-                }
-            }
-
-            // Поиск ближайшего объекта для взаимодействия
-            let closest = null; let dist = 4; let type = '';
-
-            if(!carriedBrainrot) { // Если руки пусты
-                // 1. На конвейере (Покупка)
-                convBrainrots.forEach(b => {
-                    let d = player.position.distanceTo(b.mesh.position);
-                    if(d < dist) { dist = d; closest = b; type = 'buy'; }
-                });
+            // МУЛЬТИПЛЕЕР (Получение данных о других)
+            const networkPlayers = {};
+            function createNetworkPlayer(id, name, x, y, z) {
+                const pGroup = new THREE.Group();
+                const mBl=new THREE.MeshStandardMaterial({color:0xaa0000}); const mY=new THREE.MeshStandardMaterial({color:0xffaaaa});
+                const t=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,0.6),mBl); t.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.8),mY); h.position.y=2.2;
+                pGroup.add(t,h); pGroup.traverse(c=>{if(c.isMesh)c.castShadow=true;});
                 
-                // 2. На базах (Продажа или Кража)
-                gameBases.forEach(base => {
-                    base.activeBrainrots.forEach(brMesh => {
-                        let d = player.position.distanceTo(brMesh.position);
-                        if(d < dist) { dist = d; closest = { mesh: brMesh, base: base }; type = base.owner === 'player' ? 'sell' : 'steal'; }
-                    });
-                });
+                const cN = document.createElement('canvas'); cN.width=256; cN.height=64; const ctxN=cN.getContext('2d');
+                ctxN.textAlign='center'; ctxN.fillStyle='white'; ctxN.font='bold 30px Arial'; ctxN.fillText(name, 128, 40);
+                const nS = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(cN), transparent: true}));
+                nS.position.set(0, 3, 0); nS.scale.set(3, 0.75, 1); pGroup.add(nS);
+                pGroup.position.set(x, y, z); scene.add(pGroup); networkPlayers[id] = pGroup;
             }
 
-            // Показ интерфейса кнопки
-            if (closest) {
-                targetObj = closest; actionType = type;
-                const pos = closest.mesh.position.clone(); pos.y += 2; pos.project(camera);
-                if (pos.z < 1) {
-                    actionUI.style.display = 'block';
-                    actionUI.style.left = `${(pos.x*0.5+0.5)*window.innerWidth}px`; actionUI.style.top = `${(pos.y*-0.5+0.5)*window.innerHeight}px`;
-                    if(!isHolding) {
-                        if(type === 'buy') { actText.innerText = money >= closest.mesh.typeData.price ? `BUY ${closest.mesh.typeData.price}$` : 'NO MONEY'; actText.style.color = money >= closest.mesh.typeData.price ? 'white' : 'red'; }
-                        if(type === 'sell') { actText.innerText = `SELL +${closest.mesh.typeData.price}$`; actText.style.color = 'yellow'; }
-                        if(type === 'steal') { actText.innerText = `STEAL`; actText.style.color = 'red'; }
-                    }
-                } else { actionUI.style.display = 'none'; endAction(); }
-            } else { targetObj = null; actionUI.style.display = 'none'; endAction(); }
-
-            // Логика удержания (1 секунда = 1000мс)
-            if (isHolding && targetObj) {
-                let el = Date.now() - holdStart; actProg.style.width = `${Math.min((el/1000)*100, 100)}%`;
-                if (el >= 1000) {
-                    if (actionType === 'buy' && money >= targetObj.mesh.typeData.price) {
-                        money -= targetObj.mesh.typeData.price; updateUI();
-                        convBrainrots.splice(convBrainrots.indexOf(targetObj), 1);
-                        placeOnBase(targetObj.mesh, gameBases[playerBaseIndex]);
-                    } 
-                    else if (actionType === 'sell') {
-                        money += targetObj.mesh.typeData.price; incomePerSec -= targetObj.mesh.typeData.inc; updateUI();
-                        scene.remove(targetObj.mesh); targetObj.base.activeBrainrots.splice(targetObj.base.activeBrainrots.indexOf(targetObj.mesh), 1);
-                        let sl = targetObj.base.slots.find(s => s.brMesh === targetObj.mesh); if(sl) sl.isOccupied = false;
-                    }
-                    else if (actionType === 'steal') {
-                        // Забираем в руки
-                        carriedBrainrot = targetObj.mesh;
-                        targetObj.base.activeBrainrots.splice(targetObj.base.activeBrainrots.indexOf(targetObj.mesh), 1);
-                        let sl = targetObj.base.slots.find(s => s.brMesh === targetObj.mesh); if(sl) sl.isOccupied = false;
-                        document.getElementById('carry-status').style.display = 'block';
-                    }
-                    targetObj = null; actionUI.style.display = 'none'; endAction();
-                }
-            }
-
-            // Логика переноски
-            if (carriedBrainrot) {
-                // Висит над головой игрока
-                carriedBrainrot.position.set(player.position.x, player.position.y + 3, player.position.z);
+            // Слушатель Firebase
+            onValue(ref(db, 'players'), (snapshot) => {
+                const data = snapshot.val() || {};
                 
-                // Проверка: Пришли ли мы на СВОЮ базу?
-                let myB = gameBases[playerBaseIndex];
-                if (player.position.distanceTo(new THREE.Vector3(myB.x, 0, myB.z)) < 7) {
-                    placeOnBase(carriedBrainrot, myB);
-                    carriedBrainrot = null; document.getElementById('carry-status').style.display = 'none';
-                }
-            }
-
-            // Логика Баз (Кнопки и Лазеры)
-            gameBases.forEach(base => {
-                // Нажатие на кнопку
-                if(player.position.distanceTo(base.btnMesh.position) < 1.5) {
-                    base.laserActive = true; base.laserTimer = 30; // 30 секунд
-                    base.btnMesh.position.y = 0.05; // Вдавлена
-                }
-                if(base.laserActive) {
-                    base.laserMesh.visible = true;
-                    // Ограничение движения для чужих лазеров (очень простая коллизия)
-                    if(base.owner !== 'player') {
-                        let laserBox = new THREE.Box3().setFromObject(base.laserMesh);
-                        let playerBox = new THREE.Box3().setFromObject(player);
-                        if(laserBox.intersectsBox(playerBox)) {
-                            // Отталкиваем
-                            player.position.z += (player.position.z > base.z ? 1 : -1) * 0.5;
-                        }
+                for(let id in data) {
+                    if(id === myPlayerId) continue;
+                    let pData = data[id];
+                    if(!networkPlayers[id]) { createNetworkPlayer(id, pData.name, pData.x, pData.y, pData.z); } 
+                    else {
+                        networkPlayers[id].position.set(pData.x, pData.y, pData.z);
+                        if(pData.rotY) networkPlayers[id].rotation.y = pData.rotY;
                     }
-                } else {
-                    base.laserMesh.visible = false; base.btnMesh.position.y = 0.1; // Отжата
+                }
+                for(let id in networkPlayers) {
+                    if(!data[id]) { scene.remove(networkPlayers[id]); delete networkPlayers[id]; }
                 }
             });
 
-            // Таймер лазеров (каждый кадр отнимаем крохи, грубо говоря 60fps)
-            gameBases.forEach(b => { if(b.laserTimer > 0) { b.laserTimer -= 1/60; if(b.laserTimer<=0) b.laserActive = false; }});
+            const controls = new THREE.OrbitControls(camera, renderer.domElement); camera.position.set(10, 6, 28); controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; 
+            let prevP = player.position.clone();
 
-            // Логика Капканов
-            traps.forEach((trap, i) => {
-                if(player.position.distanceTo(trap.position) < 1) {
-                    scene.remove(trap); traps.splice(i, 1);
-                    isFrozen = true; document.getElementById('freeze-screen').style.display = 'flex';
-                    setTimeout(() => { isFrozen = false; document.getElementById('freeze-screen').style.display = 'none'; }, 10000); // 10 сек
-                }
-            });
+            function createTextSprite(t, c, yO) { const can = document.createElement('canvas'); can.width=512; can.height=128; const ctx=can.getContext('2d'); ctx.textAlign='center'; ctx.fillStyle=c; ctx.font='bold 40px Arial'; ctx.fillText(t, 256, 70); const sp=new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(can), transparent: true})); sp.position.y=yO; sp.scale.set(6, 1.5, 1); return sp; }
 
-            // Физика игрока
-            if (moveVec.x !== 0 || moveVec.z !== 0) {
-                const ang = Math.atan2(camera.position.x - player.position.x, camera.position.z - player.position.z);
-                player.position.x += (moveVec.x * Math.cos(ang) + moveVec.z * Math.sin(ang)) * 0.25;
-                player.position.z += (-moveVec.x * Math.sin(ang) + moveVec.z * Math.cos(ang)) * 0.25;
-                player.rotation.y = ang + Math.atan2(moveVec.x, moveVec.z); // Поворот модельки по ходу движения
+            const gameBases = []; let pBaseIdx = Math.floor(Math.random() * 8);
+            function mkBase(idx, x, z, col, isL) {
+                const b = { x, z, slots: [], owner: idx===pBaseIdx?'player':'bot', activeBrainrots: [] };
+                const fl = new THREE.Mesh(new THREE.BoxGeometry(14,0.1,12), new THREE.MeshStandardMaterial({color:0xaaaaaa})); fl.position.set(x,0.05,z); scene.add(fl);
+                const dir = isL ? 1 : -1; const wM = new THREE.MeshStandardMaterial({color:0x555555});
+                const bW = new THREE.Mesh(new THREE.BoxGeometry(0.5,5,12),wM); bW.position.set(x-(6.75*dir),2.5,z); scene.add(bW);
+                const s1 = new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s1.position.set(x,2.5,z-5.75); scene.add(s1);
+                const s2 = new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s2.position.set(x,2.5,z+5.75); scene.add(s2);
+                const rf = new THREE.Mesh(new THREE.BoxGeometry(14.5,0.5,12.5), new THREE.MeshStandardMaterial({color:col})); rf.position.set(x,5.25,z); scene.add(rf);
+                
+                const sign = createTextSprite(b.owner==='player'?"MY BASE":"BASE", b.owner==='player'?"#00ff00":"#ff4444", 7); sign.position.x=x; sign.position.z=z; scene.add(sign);
+
+                const stX = x + (4*dir); const sM = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5});
+                for(let r=0;r<2;r++){ for(let c=0;c<5;c++){ const sm = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,1.6),sM); let sx=stX-(c*2.2*dir); let sz=(z-2.5)+(r*5); sm.position.set(sx,0.15,sz); scene.add(sm); b.slots.push({x:sx,y:0.25,z:sz,isOccupied:false,brMesh:null}); } }
+                
+                b.btnMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.2),new THREE.MeshStandardMaterial({color:0xffff00})); b.btnMesh.position.set(x+(5*dir),0.1,z); scene.add(b.btnMesh); b.laserActive=false; b.laserT=0;
+                b.laserMesh=new THREE.Mesh(new THREE.BoxGeometry(0.2,5,11),new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.5})); b.laserMesh.position.set(x+(6.8*dir),2.5,z); b.laserMesh.visible=false; scene.add(b.laserMesh);
+                gameBases.push(b);
             }
-            velY -= 0.02; player.position.y += velY;
-            if (player.position.y <= 0) { player.position.y = 0; velY = 0; isGnd = true; }
+            mkBase(0, -30, -30, 0x0055ff, true); mkBase(1, -30, -10, 0x0055ff, true); mkBase(2, -30, 10, 0x0055ff, true); mkBase(3, -30, 30, 0x0055ff, true);
+            mkBase(4, 30, -30, 0xff2200, false); mkBase(5, 30, -10, 0xff2200, false); mkBase(6, 30, 10, 0xff2200, false); mkBase(7, 30, 30, 0xff2200, false);
 
-            // Камера
-            camera.position.x += player.position.x - prevPlayerPos.x; camera.position.y += player.position.y - prevPlayerPos.y; camera.position.z += player.position.z - prevPlayerPos.z;
-            controls.target.copy(player.position); controls.target.y += 1.5; controls.update(); prevPlayerPos.copy(player.position);
+            const convBR = [];
+            function buildBR(t) {
+                const gr=new THREE.Group(); const mY=new THREE.MeshStandardMaterial({color:0xffff00}); const mG=new THREE.MeshStandardMaterial({color:0x00aa00}); const mB=new THREE.MeshStandardMaterial({color:0x0055ff}); const mO=new THREE.MeshStandardMaterial({color:0xffa500}); const mK=new THREE.MeshStandardMaterial({color:0x6b8e23}); const mGr=new THREE.MeshStandardMaterial({color:0x888888}); const mBl=new THREE.MeshStandardMaterial({color:0x111111});
+                if(t==='noobini'){ const l=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mB);l.position.y=0.4; const to=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mG);to.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),mY);h.position.y=1.9; const p=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.1,16),mO);p.position.y=2.25; gr.add(l,to,h,p); gr.td={n:'Noobini', p:0, i:1}; }
+                else{ const b=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,16),mK);b.position.y=0.9;b.scale.set(1,1.1,1); const h=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.3,0.4),mGr);h.position.set(0,0.9,0.6); const m=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.12,0.1),mBl);m.position.set(0,0.92,0.78); gr.add(b,h,m); gr.td={n:'Pipi Kiwi', p:100, i:2}; }
+                gr.traverse(c=>{if(c.isMesh)c.castShadow=true;}); return gr;
+            }
+            setInterval(()=>{ const b=buildBR(Math.random()>0.5?'noobini':'pipikiwi'); b.position.set((Math.random()-0.5)*4, 0.5, -mapSize/2 - 2); scene.add(b); convBR.push({m:b, s:'conveyor'}); }, 3000);
 
-            renderer.render(scene, camera);
+            function placeOnBase(br, base) { let slot=base.slots.find(s=>!s.isOccupied); if(slot){br.position.set(slot.x,slot.y,slot.z); slot.isOccupied=true; slot.brMesh=br; base.activeBrainrots.push(br); if(base.owner==='player'){incomePerSec+=br.td.i; updateUI();}} }
+
+            let mV={x:0,z:0}; nipplejs.create({zone:document.getElementById('joystick-zone'),mode:'static',position:{left:'70px',bottom:'70px'},color:'white'}).on('move',(e,d)=>{mV.x=Math.cos(d.angle.radian)*Math.min(d.force,1); mV.z=-Math.sin(d.angle.radian)*Math.min(d.force,1);}).on('end',()=>{mV={x:0,z:0};});
+            let vY=0; let isGnd=true; document.getElementById('jump-btn').ontouchstart=(e)=>{e.preventDefault(); if(isGnd&&!isFrozen){vY=0.4; isGnd=false;}};
+            let isHit=false; document.getElementById('hit-btn').ontouchstart=(e)=>{e.preventDefault(); if(!isHit&&!isFrozen){isHit=true; let sR=stick.rotation.z; let t=0; let hA=setInterval(()=>{t+=0.1; stick.rotation.z=sR-Math.sin(t*Math.PI)*1.5; if(t>=1){clearInterval(hA); stick.rotation.z=sR; isHit=false;}},16);}};
+            const traps=[]; document.getElementById('trap-btn').ontouchstart=(e)=>{e.preventDefault(); if(trapsCount>0&&!isFrozen){trapsCount--; updateUI(); const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,0.1),new THREE.MeshStandardMaterial({color:0x333333})); tr.position.copy(player.position); tr.position.y=0.1; scene.add(tr); traps.push(tr);}};
+
+            const aUI=document.getElementById('action-ui'); const aPr=document.getElementById('action-progress'); const aTx=document.getElementById('action-text');
+            let tObj=null; let aType=''; let hStart=0; let isH=false; function endAct(){isH=false; aPr.style.width='0%';}
+            aUI.ontouchstart=aUI.onmousedown=(e)=>{e.preventDefault(); if(tObj&&!isFrozen){isH=true; hStart=Date.now(); aTx.innerText='WAIT...';}}; window.ontouchend=window.onmouseup=endAct;
+
+            let syncTimer = 0; 
+            function animate() {
+                requestAnimationFrame(animate);
+                if(isFrozen) return renderer.render(scene, camera);
+
+                convTex.offset.y -= 0.008;
+                for(let i=convBR.length-1; i>=0; i--){ const b=convBR[i]; if(b.s==='conveyor'){ b.m.position.z+=0.06; if(b.m.position.z > mapSize/2+2){ scene.remove(b.m); convBR.splice(i,1); } } }
+
+                let cl=null; let dst=4; let typ='';
+                if(!carriedBrainrot){
+                    convBR.forEach(b=>{let d=player.position.distanceTo(b.m.position); if(d<dst){dst=d;cl=b;typ='buy';}});
+                    gameBases.forEach(b=>{b.activeBrainrots.forEach(bm=>{let d=player.position.distanceTo(bm.position); if(d<dst){dst=d;cl={m:bm,b:b};typ=b.owner==='player'?'sell':'steal';}});});
+                }
+                if(cl){ tObj=cl; aType=typ; const p=cl.m.position.clone(); p.y+=2; p.project(camera); if(p.z<1){ aUI.style.display='block'; aUI.style.left=`${(p.x*0.5+0.5)*innerWidth}px`; aUI.style.top=`${(p.y*-0.5+0.5)*innerHeight}px`; if(!isH){ if(typ==='buy'){aTx.innerText=money>=cl.m.td.p?`BUY ${cl.m.td.p}$`:'NO $'; aTx.style.color=money>=cl.m.td.p?'white':'red';} if(typ==='sell'){aTx.innerText=`SELL +${cl.m.td.p}$`; aTx.style.color='yellow';} if(typ==='steal'){aTx.innerText=`STEAL`; aTx.style.color='red';} } } else {aUI.style.display='none'; endAct();} } else {tObj=null; aUI.style.display='none'; endAct();}
+
+                if(isH && tObj){ let el=Date.now()-hStart; aPr.style.width=`${Math.min((el/1000)*100,100)}%`; if(el>=1000){ if(aType==='buy' && money>=tObj.m.td.p){ money-=tObj.m.td.p; updateUI(); convBR.splice(convBR.indexOf(tObj),1); placeOnBase(tObj.m, gameBases[pBaseIdx]); } else if(aType==='sell'){ money+=tObj.m.td.p; incomePerSec-=tObj.m.td.i; updateUI(); scene.remove(tObj.m); tObj.b.activeBrainrots.splice(tObj.b.activeBrainrots.indexOf(tObj.m),1); let sl=tObj.b.slots.find(s=>s.brMesh===tObj.m); if(sl)sl.isOccupied=false; } else if(aType==='steal'){ carriedBrainrot=tObj.m; tObj.b.activeBrainrots.splice(tObj.b.activeBrainrots.indexOf(tObj.m),1); let sl=tObj.b.slots.find(s=>s.brMesh===tObj.m); if(sl)sl.isOccupied=false; document.getElementById('carry-status').style.display='block'; } tObj=null; aUI.style.display='none'; endAct(); } }
+
+                if(carriedBrainrot){ carriedBrainrot.position.set(player.position.x, player.position.y+3, player.position.z); let mB=gameBases[pBaseIdx]; if(player.position.distanceTo(new THREE.Vector3(mB.x,0,mB.z))<7){ placeOnBase(carriedBrainrot,mB); carriedBrainrot=null; document.getElementById('carry-status').style.display='none'; } }
+
+                gameBases.forEach(b=>{ if(player.position.distanceTo(b.btnMesh.position)<1.5){b.laserActive=true; b.laserT=30; b.btnMesh.position.y=0.05;} if(b.laserActive){ b.laserMesh.visible=true; if(b.owner!=='player'){ let lB=new THREE.Box3().setFromObject(b.laserMesh); let pB=new THREE.Box3().setFromObject(player); if(lB.intersectsBox(pB)){player.position.x+=(player.position.x>0?-1:1)*0.5;} } } else {b.laserMesh.visible=false; b.btnMesh.position.y=0.1;} if(b.laserT>0){b.laserT-=1/60; if(b.laserT<=0)b.laserActive=false;} });
+
+                traps.forEach((tr,i)=>{ if(player.position.distanceTo(tr.position)<1){ scene.remove(tr); traps.splice(i,1); isFrozen=true; document.getElementById('freeze-screen').style.display='flex'; setTimeout(()=>{isFrozen=false; document.getElementById('freeze-screen').style.display='none';},10000); } });
+
+                if(mV.x!==0||mV.z!==0){ const ag=Math.atan2(camera.position.x-player.position.x, camera.position.z-player.position.z); player.position.x+=(mV.x*Math.cos(ag)+mV.z*Math.sin(ag))*0.25; player.position.z+=(-mV.x*Math.sin(ag)+mV.z*Math.cos(ag))*0.25; player.rotation.y=ag+Math.atan2(mV.x,mV.z); }
+                vY-=0.02; player.position.y+=vY; if(player.position.y<=0){player.position.y=0;vY=0;isGnd=true;}
+
+                // Синхронизация (Firebase Update)
+                syncTimer++;
+                if(myPlayerId && syncTimer > 2) {
+                    syncTimer = 0;
+                    if(mV.x !== 0 || mV.z !== 0 || !isGnd) { 
+                        update(ref(db, 'players/' + myPlayerId), { x: player.position.x, y: player.position.y, z: player.position.z, rotY: player.rotation.y });
+                    }
+                }
+
+                camera.position.x+=player.position.x-prevP.x; camera.position.y+=player.position.y-prevP.y; camera.position.z+=player.position.z-prevP.z; controls.target.copy(player.position); controls.target.y+=1.5; controls.update(); prevP.copy(player.position);
+                renderer.render(scene, camera);
+            }
+            window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight);});
+            animate();
         }
-
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-        animate();
     </script>
 </body>
 </html>
