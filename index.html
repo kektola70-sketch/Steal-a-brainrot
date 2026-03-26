@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Steal a Brainrot</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Убираем прокрутку */
+            background-color: #87CEEB; /* Цвет неба */
+            touch-action: none; /* Отключаем стандартные жесты браузера */
+        }
+        canvas {
+            display: block;
+        }
+        /* Зона для джойстика слева */
+        #joystick-zone {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            z-index: 10;
+        }
+        /* Кнопка прыжка справа */
+        #jump-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px solid white;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            color: black;
+            z-index: 10;
+            user-select: none;
+        }
+        #jump-btn:active {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- UI Элементы -->
+    <div id="joystick-zone"></div>
+    <button id="jump-btn">JUMP</button>
+
+    <!-- Подключаем библиотеки -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls для вращения и зума камеры -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Nipple.js для джойстика -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+
+    <script>
+        // --- 1. БАЗОВАЯ НАСТРОЙКА СЦЕНЫ ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Голубое небо
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Освещение
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // --- 2. СОЗДАНИЕ КАРТЫ ---
+        const mapSize = 40; // Средний размер карты
+
+        // Земля (Зеленая платформа)
+        const floorGeo = new THREE.PlaneGeometry(mapSize, mapSize);
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0x228B22 }); // Зеленый цвет
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2; // Кладем на пол
+        scene.add(floor);
+
+        // Красный конвейер по центру
+        const conveyorGeo = new THREE.BoxGeometry(4, 0.5, 12);
+        const conveyorMat = new THREE.MeshLambertMaterial({ color: 0xff0000 }); // Красный
+        const conveyor = new THREE.Mesh(conveyorGeo, conveyorMat);
+        conveyor.position.set(0, 0.25, 0); // Чуть приподнят над землей
+        scene.add(conveyor);
+
+        // Серые стены по краям
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0x808080 }); // Серый
+        const wallThickness = 2;
+        const wallHeight = 5;
+
+        function createWall(x, z, width, depth) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, depth), wallMat);
+            wall.position.set(x, wallHeight / 2, z);
+            scene.add(wall);
+        }
+
+        // Создаем 4 стены
+        createWall(0, -mapSize/2, mapSize, wallThickness); // Север
+        createWall(0, mapSize/2, mapSize, wallThickness);  // Юг
+        createWall(-mapSize/2, 0, wallThickness, mapSize); // Запад
+        createWall(mapSize/2, 0, wallThickness, mapSize);  // Восток
+
+        // --- 3. ИГРОК ---
+        const playerGeo = new THREE.BoxGeometry(1, 2, 1); // Игрок - кубик
+        const playerMat = new THREE.MeshLambertMaterial({ color: 0xffff00 }); // Желтый
+        const player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.set(0, 1, 15); // Стартовая позиция
+        scene.add(player);
+
+        // Настройка камеры (чтобы крутилась вокруг игрока)
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 5, 20); // Начальная позиция камеры
+        controls.enablePan = false; // Отключаем смещение камеры двумя пальцами
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Не даем камере опускаться под землю
+        controls.minDistance = 2; // Максимальное приближение
+        controls.maxDistance = 20; // Максимальное отдаление
+
+        // --- 4. УПРАВЛЕНИЕ (Джойстик и Прыжок) ---
+        let moveVector = { x: 0, z: 0 };
+        const speed = 0.15;
+
+        // Настройка Nipple.js (джойстик)
+        const joystickManager = nipplejs.create({
+            zone: document.getElementById('joystick-zone'),
+            mode: 'static',
+            position: { left: '60px', bottom: '60px' },
+            color: 'white'
+        });
+
+        joystickManager.on('move', (evt, data) => {
+            // Конвертируем угол джойстика в направления X и Z
+            const angle = data.angle.radian;
+            const force = Math.min(data.force, 1); // Ограничиваем силу
+            
+            // Математика для движения (учитывая что камера смотрит вперед)
+            moveVector.x = Math.cos(angle) * force;
+            moveVector.z = -Math.sin(angle) * force;
+        });
+
+        joystickManager.on('end', () => {
+            moveVector = { x: 0, z: 0 }; // Остановка при отпускании
+        });
+
+        // Прыжок
+        let velocityY = 0;
+        let isGrounded = true;
+        const gravity = -0.015;
+        const jumpStrength = 0.3;
+
+        const jumpBtn = document.getElementById('jump-btn');
+        // Поддержка и мыши и тачскрина
+        const jumpAction = (e) => {
+            e.preventDefault();
+            if (isGrounded) {
+                velocityY = jumpStrength;
+                isGrounded = false;
+            }
+        };
+        jumpBtn.addEventListener('touchstart', jumpAction);
+        jumpBtn.addEventListener('mousedown', jumpAction);
+
+        // --- 5. ИГРОВОЙ ЦИКЛ (Физика и Рендер) ---
+        const playerHalfSize = 0.5;
+        const boundary = mapSize / 2 - wallThickness;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Движение относительно поворота камеры
+            if (moveVector.x !== 0 || moveVector.z !== 0) {
+                // Получаем угол поворота камеры по Y
+                const cameraAngle = Math.atan2(
+                    camera.position.x - player.position.x,
+                    camera.position.z - player.position.z
+                );
+
+                // Вычисляем куда идти относительно камеры
+                const moveX = moveVector.x * Math.cos(cameraAngle) + moveVector.z * Math.sin(cameraAngle);
+                const moveZ = -moveVector.x * Math.sin(cameraAngle) + moveVector.z * Math.cos(cameraAngle);
+
+                player.position.x += moveX * speed;
+                player.position.z += moveZ * speed;
+            }
+
+            // Гравитация и прыжок
+            velocityY += gravity;
+            player.position.y += velocityY;
+
+            // Столкновение с полом
+            if (player.position.y <= 1) { // 1 = половина высоты игрока (2 / 2)
+                player.position.y = 1;
+                velocityY = 0;
+                isGrounded = true;
+            }
+
+            // Столкновение со стенами (ограничиваем выход за карту)
+            if (player.position.x > boundary) player.position.x = boundary;
+            if (player.position.x < -boundary) player.position.x = -boundary;
+            if (player.position.z > boundary) player.position.z = boundary;
+            if (player.position.z < -boundary) player.position.z = -boundary;
+
+            // Камера всегда следует за игроком
+            controls.target.copy(player.position);
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+
+        // Адаптация под размер экрана при повороте телефона
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate(); // Запуск игры
+    </script>
+</body>
+</html>
