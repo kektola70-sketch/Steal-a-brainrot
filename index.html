@@ -8,20 +8,29 @@
         body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: Arial, sans-serif; user-select: none; }
         canvas { display: block; }
         
-        /* МЕНЮ ЛОББИ */
+        /* МЕНЮ ЛОББИ И АВТОРИЗАЦИИ */
         #login-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover;
             display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
         #login-box {
-            background: rgba(0, 0, 0, 0.8); padding: 30px; border-radius: 15px; border: 3px solid #00ff00;
-            text-align: center; color: white; width: 80%; max-width: 300px;
+            background: rgba(0, 0, 0, 0.85); padding: 30px; border-radius: 15px; border: 3px solid #00ff00;
+            text-align: center; color: white; width: 80%; max-width: 320px; box-shadow: 0 0 20px #00ff00;
         }
-        #login-box h1 { margin-top: 0; color: #00ff00; font-size: 28px; }
-        #nickname-input { width: 90%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: none; font-size: 18px; text-align: center; font-weight: bold; }
-        #play-btn { background: #00ff00; color: black; border: none; padding: 10px 30px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; }
-        #play-btn:active { background: #00cc00; }
+        #login-box h1 { margin-top: 0; color: #00ff00; font-size: 26px; margin-bottom: 5px; }
+        .auth-input { 
+            width: 90%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: none; 
+            font-size: 16px; text-align: center; font-weight: bold; background: #222; color: white; border: 1px solid #555;
+        }
+        .auth-input::placeholder { color: #aaa; }
+        #auth-btn { 
+            background: #00ff00; color: black; border: none; padding: 10px 30px; width: 100%;
+            font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px;
+        }
+        #auth-btn:active { background: #00cc00; }
+        #toggle-auth { color: #00ff00; cursor: pointer; font-size: 14px; text-decoration: underline; margin-top: 15px; }
+        #auth-status { font-size: 12px; color: yellow; margin-top: 10px; min-height: 15px; word-wrap: break-word; }
 
         /* ИГРОВОЙ UI */
         #game-ui { display: none; }
@@ -46,18 +55,27 @@
 </head>
 <body>
 
+    <!-- МЕНЮ ЛОББИ -->
     <div id="login-screen">
         <div id="login-box">
             <h1>Steal a Brainrot</h1>
-            <p style="color: #aaa; font-size: 14px;">SERVER: GLOBAL [EU]</p>
-            <input type="text" id="nickname-input" placeholder="Enter Nickname" maxlength="12">
-            <button id="play-btn">PLAY</button>
-            <p id="auth-status" style="font-size: 12px; color: yellow; margin-top: 10px;">Connecting...</p>
+            <p id="auth-title" style="color: #aaa; font-size: 14px; margin-bottom: 20px;">LOGIN TO SERVER</p>
+            
+            <input type="email" id="email-input" class="auth-input" placeholder="Email">
+            <input type="password" id="password-input" class="auth-input" placeholder="Password">
+            
+            <!-- Поле Никнейма (видно только при регистрации) -->
+            <input type="text" id="nickname-input" class="auth-input" placeholder="Nickname (Game Name)" maxlength="12" style="display: none;">
+            
+            <button id="auth-btn">LOGIN</button>
+            <p id="toggle-auth">Don't have an account? Register</p>
+            <p id="auth-status">Connecting to Firebase...</p>
         </div>
     </div>
 
     <div id="freeze-screen">TRAPPED!</div>
 
+    <!-- ИГРОВОЙ UI -->
     <div id="game-ui">
         <div id="top-bar">
             <div class="ui-box">
@@ -90,54 +108,99 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     
-    <!-- НОВЫЙ МОДУЛЬНЫЙ FIREBASE v12 И КОД ИГРЫ -->
+    <!-- НОВЫЙ МОДУЛЬНЫЙ FIREBASE v12 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-        // Импортируем нужные функции для Базы Данных
+        // Модули Базы Данных
         import { getDatabase, ref, set, onValue, update, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+        // Модули Авторизации
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-        // ТВОЯ КОНФИГУРАЦИЯ (С добавлением ссылки на БД для надежности)
+        // КОНФИГУРАЦИЯ
         const firebaseConfig = {
             apiKey: "AIzaSyAmPLW5-F628bAQG4mG_V7JXIXcyMs1nfA",
             authDomain: "steal-a-brainrot-20fb8.firebaseapp.com",
-            databaseURL: "https://steal-a-brainrot-20fb8-default-rtdb.firebaseio.com", // Ссылка на твою базу данных
+            databaseURL: "https://steal-a-brainrot-20fb8-default-rtdb.firebaseio.com",
             projectId: "steal-a-brainrot-20fb8",
             storageBucket: "steal-a-brainrot-20fb8.firebasestorage.app",
             messagingSenderId: "743775817141",
             appId: "1:743775817141:web:f0e4b0481ca3ab20b29dfc"
         };
 
-        // Инициализация
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app);
 
         let myPlayerId = null;
         let nickname = "Guest";
 
-        document.getElementById('auth-status').innerText = "Connected to Server";
-        document.getElementById('auth-status').style.color = "#00ff00";
+        const statusTxt = document.getElementById('auth-status');
+        statusTxt.innerText = "System Ready. Please Login.";
+        statusTxt.style.color = "#00ff00";
 
-        // --- ЛОГИКА ВХОДА ---
-        document.getElementById('play-btn').onclick = () => {
-            const nameInput = document.getElementById('nickname-input').value.trim();
-            if(nameInput.length < 3) { alert("Nickname must be at least 3 characters!"); return; }
-            nickname = nameInput;
-            
-            // Создаем уникальный ID игрока
-            myPlayerId = "player_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-            
-            // Записываем себя в БД
-            const myPlayerRef = ref(db, 'players/' + myPlayerId);
-            set(myPlayerRef, { name: nickname, x: 10, y: 0, z: 20, rotY: 0 });
-            
-            // Если вкладка закрывается - удаляем игрока с сервера
-            onDisconnect(myPlayerRef).remove();
+        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВХОД/РЕГИСТРАЦИЯ ---
+        let isLoginMode = true;
+        document.getElementById('toggle-auth').onclick = () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                document.getElementById('auth-title').innerText = "LOGIN TO SERVER";
+                document.getElementById('nickname-input').style.display = 'none';
+                document.getElementById('auth-btn').innerText = "LOGIN";
+                document.getElementById('toggle-auth').innerText = "Don't have an account? Register";
+            } else {
+                document.getElementById('auth-title').innerText = "CREATE ACCOUNT";
+                document.getElementById('nickname-input').style.display = 'block';
+                document.getElementById('auth-btn').innerText = "REGISTER & PLAY";
+                document.getElementById('toggle-auth').innerText = "Already have an account? Login";
+            }
+            statusTxt.innerText = "";
+        };
 
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-            
-            // Запускаем 3D мир
-            startGame(); 
+        // --- ЛОГИКА АВТОРИЗАЦИИ (FIREBASE AUTH) ---
+        document.getElementById('auth-btn').onclick = async () => {
+            const email = document.getElementById('email-input').value.trim();
+            const pass = document.getElementById('password-input').value.trim();
+            const nick = document.getElementById('nickname-input').value.trim();
+
+            if (!email || !pass) { statusTxt.innerText = "Error: Fill all fields!"; statusTxt.style.color = "red"; return; }
+            if (!isLoginMode && nick.length < 3) { statusTxt.innerText = "Error: Nickname must be > 2 chars!"; statusTxt.style.color = "red"; return; }
+
+            statusTxt.innerText = "Processing...";
+            statusTxt.style.color = "yellow";
+
+            try {
+                let userCredential;
+                if (isLoginMode) {
+                    // Вход
+                    userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                    nickname = userCredential.user.displayName || "UnknownPlayer";
+                } else {
+                    // Регистрация
+                    userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(userCredential.user, { displayName: nick });
+                    nickname = nick;
+                }
+
+                // Получаем уникальный ID игрока из базы Firebase Auth
+                myPlayerId = userCredential.user.uid;
+                
+                // Записываем игрока в игровую Базу Данных
+                const myPlayerRef = ref(db, 'players/' + myPlayerId);
+                set(myPlayerRef, { name: nickname, x: 10, y: 0, z: 20, rotY: 0 });
+                
+                // Удаляем с карты при выходе
+                onDisconnect(myPlayerRef).remove();
+
+                // Скрываем меню, запускаем игру
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('game-ui').style.display = 'block';
+                startGame();
+
+            } catch (error) {
+                console.error(error);
+                statusTxt.innerText = "Error: " + error.message;
+                statusTxt.style.color = "red";
+            }
         };
 
         // --- ОСНОВНОЙ 3D КОД ИГРЫ ---
@@ -148,7 +211,6 @@
             function updateUI() { document.getElementById('money-txt').innerText = money + '$'; document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec'; document.getElementById('inv-traps').innerText = trapsCount; }
             setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); } }, 1000);
 
-            // Глобальная функция для магазина (т.к. мы в type="module")
             window.buyShopItem = function(item, price) {
                 if(money >= price) {
                     if(item === 'trap' && trapsCount < 5) { money -= price; trapsCount++; }
@@ -216,10 +278,8 @@
                 pGroup.position.set(x, y, z); scene.add(pGroup); networkPlayers[id] = pGroup;
             }
 
-            // Слушатель Firebase
             onValue(ref(db, 'players'), (snapshot) => {
                 const data = snapshot.val() || {};
-                
                 for(let id in data) {
                     if(id === myPlayerId) continue;
                     let pData = data[id];
@@ -229,9 +289,7 @@
                         if(pData.rotY) networkPlayers[id].rotation.y = pData.rotY;
                     }
                 }
-                for(let id in networkPlayers) {
-                    if(!data[id]) { scene.remove(networkPlayers[id]); delete networkPlayers[id]; }
-                }
+                for(let id in networkPlayers) { if(!data[id]) { scene.remove(networkPlayers[id]); delete networkPlayers[id]; } }
             });
 
             const controls = new THREE.OrbitControls(camera, renderer.domElement); camera.position.set(10, 6, 28); controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; 
@@ -307,7 +365,6 @@
                 if(mV.x!==0||mV.z!==0){ const ag=Math.atan2(camera.position.x-player.position.x, camera.position.z-player.position.z); player.position.x+=(mV.x*Math.cos(ag)+mV.z*Math.sin(ag))*0.25; player.position.z+=(-mV.x*Math.sin(ag)+mV.z*Math.cos(ag))*0.25; player.rotation.y=ag+Math.atan2(mV.x,mV.z); }
                 vY-=0.02; player.position.y+=vY; if(player.position.y<=0){player.position.y=0;vY=0;isGnd=true;}
 
-                // Синхронизация (Firebase Update)
                 syncTimer++;
                 if(myPlayerId && syncTimer > 2) {
                     syncTimer = 0;
