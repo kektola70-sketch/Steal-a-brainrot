@@ -8,7 +8,6 @@
         body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: Arial, sans-serif; user-select: none; }
         canvas { display: block; }
         
-        /* МЕНЮ ЛОББИ */
         #login-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
         #login-box { background: rgba(0, 0, 0, 0.85); padding: 30px; border-radius: 15px; border: 3px solid #00ff00; text-align: center; color: white; width: 80%; max-width: 320px; box-shadow: 0 0 20px #00ff00; }
         #login-box h1 { margin-top: 0; color: #00ff00; font-size: 26px; margin-bottom: 5px; }
@@ -17,10 +16,8 @@
         #toggle-auth { color: #00ff00; cursor: pointer; font-size: 14px; text-decoration: underline; margin-top: 15px; }
         #auth-status { font-size: 12px; color: yellow; margin-top: 10px; }
 
-        /* ИГРОВОЙ UI */
         #game-ui { display: none; }
         
-        /* ЧАТ В ЛЕВОМ ВЕРХНЕМ УГЛУ */
         #chat-container { position: absolute; top: 10px; left: 10px; width: 250px; height: 180px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1px solid white; display: flex; flex-direction: column; z-index: 20; pointer-events: auto; }
         #chat-messages { flex-grow: 1; overflow-y: auto; padding: 5px; color: white; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
         #chat-input-area { display: flex; border-top: 1px solid gray; }
@@ -64,8 +61,6 @@
     <div id="freeze-screen">TRAPPED!</div>
 
     <div id="game-ui">
-        
-        <!-- ЧАТ -->
         <div id="chat-container">
             <div id="chat-messages"></div>
             <div id="chat-input-area">
@@ -106,7 +101,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-        import { getDatabase, ref, set, get, onValue, update, push, onChildAdded, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+        import { getDatabase, ref, set, get, onValue, update, push, onChildAdded, onDisconnect } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -124,20 +119,15 @@
         const auth = getAuth(app);
 
         let myPlayerId = null; let nickname = "Guest";
-        
-        // Звуковой движок
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSpawnSound() {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(150 + Math.random()*100, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
-            osc.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+
+        // ГЕНЕРАТОР ЗВУКА ГОЛОСА (Text-to-Speech)
+        function speakName(name) {
+            if(!window.speechSynthesis) return;
+            const msg = new SpeechSynthesisUtterance(name);
+            msg.lang = 'en-US'; msg.volume = 1; msg.rate = 1.1; msg.pitch = 1.4; // Писклявый смешной голос
+            window.speechSynthesis.speak(msg);
         }
 
-        // Авторизация
         let isLoginMode = true;
         document.getElementById('toggle-auth').onclick = () => {
             isLoginMode = !isLoginMode;
@@ -165,75 +155,62 @@
                 }
                 myPlayerId = uCred.user.uid;
                 
-                // Инициализация при входе
                 const pRef = ref(db, 'players/' + myPlayerId);
                 update(pRef, { name: nickname, x: 10, y: 0, z: 20 });
-                onDisconnect(pRef).update({ x: null, y: null, z: null }); // Удаляем только позицию, деньги оставляем
+                onDisconnect(pRef).update({ x: null, y: null, z: null });
 
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('game-ui').style.display = 'block';
-                if(audioCtx.state === 'suspended') audioCtx.resume();
+                
+                // Активация аудио движка после клика (чтобы браузер не блокировал звук)
+                speakName("Welcome to Brainrot Factory");
                 startGame();
             } catch (err) { document.getElementById('auth-status').innerText = err.message; }
         };
 
-        // --- ГЛОБАЛЬНЫЙ ЧАТ ---
         const chatInput = document.getElementById('chat-input');
         const chatMsgs = document.getElementById('chat-messages');
         document.getElementById('chat-send').onclick = () => {
             const text = chatInput.value.trim();
-            if(text.length > 0) {
-                push(ref(db, 'chat'), { n: nickname, t: text });
-                chatInput.value = '';
-            }
+            if(text.length > 0) { push(ref(db, 'chat'), { n: nickname, t: text }); chatInput.value = ''; }
         };
         onChildAdded(ref(db, 'chat'), (data) => {
-            const msg = data.val();
-            const div = document.createElement('div');
+            const msg = data.val(); const div = document.createElement('div');
             div.innerHTML = `<b style="color:yellow">${msg.n}:</b> ${msg.t}`;
-            chatMsgs.appendChild(div);
-            chatMsgs.scrollTop = chatMsgs.scrollHeight;
+            chatMsgs.appendChild(div); chatMsgs.scrollTop = chatMsgs.scrollHeight;
         });
 
-        // --- ИВЕНТЫ СЕРВЕРА ---
-        let currEvent = 'none'; let evEnds = 0; let nxtEv = 0;
-        let spawnsLeft = 0;
+        // --- ИВЕНТЫ И РАДУЖНАЯ МАШИНА ---
+        let currEvent = 'none'; let evEnds = 0; let nxtEv = 0; let spawnsLeft = 0;
+        let machineGoldCount = 0;
 
         onValue(ref(db, 'serverState'), (snap) => {
             const d = snap.val(); let now = Date.now();
             if (!d || (now > d.nxtEv && now > d.evEnds)) {
                 setTimeout(() => {
-                    let r = Math.random() * 100;
-                    let type = 'none'; let count = 0;
+                    let r = Math.random() * 100; let type = 'none'; let count = 0;
                     if(r <= 1) { type = 'rainbow'; count = 5; }
                     else if(r <= 11) { type = 'diamond'; count = 10; }
                     else if(r <= 41) { type = 'gold'; count = 20; }
                     
-                    let dur = type === 'none' ? 0 : 600000; // 10 минут ивент
-                    let next = Date.now() + dur + 1800000; // +30 мин ожидание
+                    let dur = type === 'none' ? 0 : 600000; 
+                    let next = Date.now() + dur + 1800000; 
                     set(ref(db, 'serverState'), { type: type, evEnds: Date.now() + dur, nxtEv: next, spawnsLeft: count });
                 }, Math.random() * 1000);
-            } else {
-                currEvent = d.type; evEnds = d.evEnds; nxtEv = d.nxtEv; spawnsLeft = d.spawnsLeft || 0;
-            }
+            } else { currEvent = d.type; evEnds = d.evEnds; nxtEv = d.nxtEv; spawnsLeft = d.spawnsLeft || 0; }
         });
 
+        onValue(ref(db, 'rainbowMachine'), (snap) => {
+            const d = snap.val(); if(d) machineGoldCount = d.count || 0;
+        });
 
-        // --- ОСНОВНОЙ КОД ---
         async function startGame() {
             let money = 0; let incomePerSec = 0; let weapon = 'normal_glove'; let trapsCount = 0;
             let isFrozen = false; let carriedBrainrot = null; let myBaseSlots = [];
             
-            // ЗАГРУЗКА ДАННЫХ ИГРОКА (SAVE/LOAD)
             const snap = await get(ref(db, 'players/' + myPlayerId));
-            if(snap.exists() && snap.val().money) {
-                money = snap.val().money;
-                myBaseSlots = snap.val().baseSlots || [];
-            }
-
-            function savePlayerData() {
-                update(ref(db, 'players/' + myPlayerId), { money: money, baseSlots: myBaseSlots });
-            }
+            if(snap.exists() && snap.val().money) { money = snap.val().money; myBaseSlots = snap.val().baseSlots || []; }
+            function savePlayerData() { update(ref(db, 'players/' + myPlayerId), { money: money, baseSlots: myBaseSlots }); }
 
             function updateUI() { document.getElementById('money-txt').innerText = money + '$'; document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec'; document.getElementById('inv-traps').innerText = trapsCount; }
             setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); savePlayerData(); } }, 1000);
@@ -254,8 +231,7 @@
             function mkW(x,z,w,d){ const wall = new THREE.Mesh(new THREE.BoxGeometry(w,wH,d),wMat); wall.position.set(x,wH/2,z); wall.receiveShadow=wall.castShadow=true; scene.add(wall); }
             mkW(-mapS/2,0,wT,mapS); mkW(mapS/2,0,wT,mapS); const sW=(mapS-convW)/2; mkW(-convW/2-sW/2,-mapS/2,sW,wT); mkW(convW/2+sW/2,-mapS/2,sW,wT); mkW(-convW/2-sW/2,mapS/2,sW,wT); mkW(convW/2+sW/2,mapS/2,sW,wT);   
             const vdMat = new THREE.MeshBasicMaterial({color: 0x000000}); const vdGeo = new THREE.PlaneGeometry(convW, wH);
-            const vN = new THREE.Mesh(vdGeo, vdMat); vN.position.set(0, wH/2, -mapS/2+0.1); scene.add(vN);
-            const vS = new THREE.Mesh(vdGeo, vdMat); vS.position.set(0, wH/2, mapS/2-0.1); vS.rotation.y = Math.PI; scene.add(vS);
+            const vN = new THREE.Mesh(vdGeo, vdMat); vN.position.set(0, wH/2, -mapS/2+0.1); scene.add(vN); const vS = new THREE.Mesh(vdGeo, vdMat); vS.position.set(0, wH/2, mapS/2-0.1); vS.rotation.y = Math.PI; scene.add(vS);
 
             // ТАЙМЕР ИВЕНТОВ
             const scrCv = document.createElement('canvas'); scrCv.width=512; scrCv.height=256; const scrCtx = scrCv.getContext('2d');
@@ -273,6 +249,25 @@
                     scrCtx.fillStyle='#ffffff'; scrCtx.font='bold 70px Arial'; scrCtx.fillText(fmtTime(nxtEv - now), 256, 180);
                 } scrTex.needsUpdate = true;
             }, 1000);
+
+            // РАДУЖНАЯ МАШИНА
+            const rMCv = document.createElement('canvas'); rMCv.width=512; rMCv.height=256; const rMCtx = rMCv.getContext('2d');
+            const rMTex = new THREE.CanvasTexture(rMCv); 
+            const machineMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4), new THREE.MeshStandardMaterial({color: 0x222222}));
+            machineMesh.position.set(-12, 3, 0); scene.add(machineMesh);
+            const mScreen = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.5), new THREE.MeshBasicMaterial({map: rMTex}));
+            mScreen.position.set(-9.9, 4.5, 0); mScreen.rotation.y = Math.PI/2; scene.add(mScreen);
+            
+            // Зона приемки машины
+            const machinePad = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 4), new THREE.MeshStandardMaterial({color: 0x00ff00}));
+            machinePad.position.set(-8, 0.1, 0); scene.add(machinePad);
+
+            setInterval(() => {
+                rMCtx.fillStyle = '#000'; rMCtx.fillRect(0,0,512,256); rMCtx.textAlign = 'center';
+                rMCtx.fillStyle = '#ff00ff'; rMCtx.font = 'bold 45px Arial'; rMCtx.fillText("RAINBOW MACHINE", 256, 80);
+                rMCtx.fillStyle = '#ffd700'; rMCtx.font = 'bold 60px Arial'; rMCtx.fillText(`${machineGoldCount} / 10 GOLD`, 256, 180);
+                rMTex.needsUpdate = true;
+            }, 500);
 
             let player, stick; function buildPlayer() {
                 if(player) scene.remove(player); player = new THREE.Group();
@@ -307,13 +302,11 @@
             function crTxt(t, ench, p, inc) { 
                 const can=document.createElement('canvas'); can.width=512; can.height=160; const cx=can.getContext('2d'); cx.textAlign='center'; 
                 cx.fillStyle='white'; cx.font='bold 40px Arial'; cx.fillText(t, 256, 40); 
-                
                 let eCol = 'white'; let eTxt = '';
                 if(ench==='gold'){eCol='#ffd700'; eTxt='[ GOLD ] x1.5';}
                 if(ench==='diamond'){eCol='#00ffff'; eTxt='[ DIAMOND ] x5';}
                 if(ench==='rainbow'){eCol='#ff00ff'; eTxt='[ RAINBOW ] x15';}
                 if(eTxt) { cx.fillStyle=eCol; cx.font='bold 25px Arial'; cx.fillText(eTxt, 256, 75); }
-
                 cx.fillStyle='yellow'; cx.font='bold 30px Arial'; cx.fillText(`Price: ${p}$`, 256, 110);
                 cx.fillStyle='#00ff00'; cx.font='bold 30px Arial'; cx.fillText(`${inc}$ / sec`, 256, 145);
                 const sp=new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(can), transparent: true})); sp.scale.set(5, 1.5, 1); return sp; 
@@ -321,7 +314,7 @@
 
             const gBases = []; let myBIdx = Math.floor(Math.random() * 8);
             function mkBase(idx, x, z, col, isL) {
-                const b = { x, z, slots: [], owner: idx===myBIdx?'player':'bot', aBR: [] };
+                const b = { x, z, slots: [], owner: idx===myBIdx?'player':'bot', aBR: [], isL: isL, movingBRs: [] };
                 const fl=new THREE.Mesh(new THREE.BoxGeometry(14,0.1,12), new THREE.MeshStandardMaterial({color:0xaaaaaa})); fl.position.set(x,0.05,z); scene.add(fl);
                 const d=isL?1:-1; const wM=new THREE.MeshStandardMaterial({color:0x555555});
                 const bW=new THREE.Mesh(new THREE.BoxGeometry(0.5,5,12),wM); bW.position.set(x-(6.75*d),2.5,z); scene.add(bW);
@@ -329,6 +322,11 @@
                 const rf=new THREE.Mesh(new THREE.BoxGeometry(14.5,0.5,12.5), new THREE.MeshStandardMaterial({color:col})); rf.position.set(x,5.25,z); scene.add(rf);
                 
                 const cN=document.createElement('canvas'); cN.width=512; cN.height=128; const cX=cN.getContext('2d'); cX.textAlign='center'; cX.fillStyle=b.owner==='player'?"#00ff00":"#ff4444"; cX.font='bold 40px Arial'; cX.fillText(b.owner==='player'?"MY BASE":"BASE",256,70); const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cN), transparent:true})); sign.position.set(x,7,z); sign.scale.set(6,1.5,1); scene.add(sign);
+
+                // Зона приемки
+                const padX = x + (7 * d);
+                const gZone = new THREE.Mesh(new THREE.BoxGeometry(2, 0.15, 2), new THREE.MeshStandardMaterial({color: 0x00ff00}));
+                gZone.position.set(padX, 0.1, z); scene.add(gZone); b.padX = padX; b.padZ = z;
 
                 const sX=x+(4*d); const sM=new THREE.MeshStandardMaterial({color:0xffffff});
                 for(let r=0;r<2;r++){ for(let c=0;c<5;c++){ const sm=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,1.6),sM); let px=sX-(c*2.2*d); let pz=(z-2.5)+(r*5); sm.position.set(px,0.15,pz); scene.add(sm); b.slots.push({x:px,y:0.25,z:pz,occ:false,m:null}); } }
@@ -339,16 +337,10 @@
             mkBase(0,-30,-30,0x0055ff,true); mkBase(1,-30,-10,0x0055ff,true); mkBase(2,-30,10,0x0055ff,true); mkBase(3,-30,30,0x0055ff,true);
             mkBase(4,30,-30,0xff2200,false); mkBase(5,30,-10,0xff2200,false); mkBase(6,30,10,0xff2200,false); mkBase(7,30,30,0xff2200,false);
 
-            // НОВЫЕ БРЕЙНРОТЫ
             const convBR = []; const rainbowMats = [];
             function buildBR(t, ench) {
                 const gr=new THREE.Group(); let incMult = ench==='gold'?1.5:ench==='diamond'?5:ench==='rainbow'?15:1;
-                
-                let mat; // Главный материал тела
-                if(ench==='gold') mat=new THREE.MeshStandardMaterial({color:0xffd700, metalness:0.8, roughness:0.2});
-                else if(ench==='diamond') mat=new THREE.MeshStandardMaterial({color:0x00ffff, transparent:true, opacity:0.8, metalness:0.9});
-                else if(ench==='rainbow') { mat=new THREE.MeshStandardMaterial({color:0xff0000}); rainbowMats.push(mat); }
-                
+                let mat; if(ench==='gold') mat=new THREE.MeshStandardMaterial({color:0xffd700, metalness:0.8, roughness:0.2}); else if(ench==='diamond') mat=new THREE.MeshStandardMaterial({color:0x00ffff, transparent:true, opacity:0.8, metalness:0.9}); else if(ench==='rainbow') { mat=new THREE.MeshStandardMaterial({color:0xff0000}); rainbowMats.push(mat); }
                 const mG=mat||new THREE.MeshStandardMaterial({color:0x888888}); const mY=mat||new THREE.MeshStandardMaterial({color:0xffff00}); const mB=mat||new THREE.MeshStandardMaterial({color:0x0055ff}); const mP=mat||new THREE.MeshStandardMaterial({color:0xffccaa}); const mBk=new THREE.MeshStandardMaterial({color:0x111111});
                 
                 if(t==='noobini'){ const l=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mB);l.position.y=0.4; const to=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),new THREE.MeshStandardMaterial({color:0x00aa00}));to.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),mY);h.position.y=1.9; gr.add(l,to,h); gr.td={n:'Noobini', p:0, i:1*incMult, t, e:ench}; }
@@ -359,35 +351,30 @@
                 else if(t==='67'){ const g6=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.2),mB);g6.position.set(-0.3,0.5,0); const g7=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.2),mB);g7.position.set(0.3,0.5,0); const ey=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.1,0.1),new THREE.MeshStandardMaterial({color:0xffffff}));ey.position.set(0,0.8,0.15); gr.add(g6,g7,ey); gr.td={n:'Brainrot 67', p:700, i:15*incMult, t, e:ench}; }
                 
                 gr.traverse(c=>{if(c.isMesh)c.castShadow=true;});
-                const lbl = crTxt(gr.td.n, ench, gr.td.p, gr.td.i); lbl.position.y = 2.5; gr.add(lbl);
-                return gr;
+                const lbl = crTxt(gr.td.n, ench, gr.td.p, gr.td.i); lbl.position.y = 2.5; gr.add(lbl); return gr;
             }
 
-            // СПАВНЕР (Проверка шансов и ивентов)
             setInterval(()=>{ 
                 let e = 'normal';
                 if(currEvent !== 'none' && spawnsLeft > 0) { e = currEvent; update(ref(db, 'serverState'), {spawnsLeft: spawnsLeft - 1}); }
+                else {
+                    let er = Math.random() * 100;
+                    if(er < 0.5) e = 'rainbow'; else if(er < 2) e = 'diamond'; else if(er < 10) e = 'gold';
+                }
 
                 let r = Math.random() * 100; let t = '';
-                if(r < 20) t = Math.random()>0.5 ? 'ambalabu' : '67'; // 20% Rare
-                else if(r < 50) t = Math.random()>0.5 ? 'jandelini' : 'corni'; // 30% Uncommon
-                else t = Math.random()>0.5 ? 'noobini' : 'pipikiwi'; // 50% Common
+                if(r < 20) t = Math.random()>0.5 ? 'ambalabu' : '67'; else if(r < 50) t = Math.random()>0.5 ? 'jandelini' : 'corni'; else t = Math.random()>0.5 ? 'noobini' : 'pipikiwi'; 
 
-                const b = buildBR(t, e); b.position.set((Math.random()-0.5)*4, 0.5, -mapS/2 - 2); 
-                scene.add(b); convBR.push({m:b, s:'conveyor', animOffset: Math.random()*10});
-                playSpawnSound();
+                const b = buildBR(t, e); b.position.set((Math.random()-0.5)*4, 0.5, -mapS/2 - 2); scene.add(b); convBR.push({m:b, s:'conveyor', animOffset: Math.random()*10});
+                speakName(b.td.n); // Голосовая озвучка
             }, 3000);
 
-            // ВОССТАНОВЛЕНИЕ БАЗЫ ПРИ ВХОДЕ
             if(myBaseSlots.length > 0) {
-                myBaseSlots.forEach((savedSlot, i) => {
-                    if(savedSlot && savedSlot.t) {
-                        const b = buildBR(savedSlot.t, savedSlot.e);
-                        let sl = gBases[myBIdx].slots[i];
-                        b.position.set(sl.x, sl.y, sl.z);
-                        sl.occ = true; sl.m = b;
-                        gBases[myBIdx].aBR.push(b);
-                        incomePerSec += b.td.i;
+                myBaseSlots.forEach((sData, i) => {
+                    if(sData && sData.t) {
+                        const b = buildBR(sData.t, sData.e); let sl = gBases[myBIdx].slots[i];
+                        b.position.set(sl.x, sl.y, sl.z); sl.occ = true; sl.m = b;
+                        gBases[myBIdx].aBR.push(b); incomePerSec += b.td.i;
                     }
                 });
             }
@@ -395,7 +382,13 @@
             function placeOnBase(br, base) { 
                 let idx = base.slots.findIndex(s=>!s.occ); 
                 if(idx !== -1){ 
-                    let sl = base.slots[idx]; br.position.set(sl.x,sl.y,sl.z); br.rotation.set(0,0,0); sl.occ=true; sl.m=br; base.aBR.push(br); 
+                    let sl = base.slots[idx]; 
+                    sl.occ=true; sl.m=br; base.aBR.push(br); 
+                    
+                    // Ставим на Зеленый коврик и запускаем анимацию
+                    br.position.set(base.padX, 0.25, base.padZ);
+                    base.movingBRs.push({ m: br, tx: sl.x, tz: sl.z });
+
                     if(base.owner==='player'){
                         incomePerSec+=br.td.i; updateUI();
                         myBaseSlots[idx] = { t: br.td.t, e: br.td.e }; savePlayerData();
@@ -418,7 +411,6 @@
                 if(isFrozen) return renderer.render(scene, camera);
                 let time = Date.now();
 
-                // Радужная анимация
                 rainbowMats.forEach(m => m.color.setHSL((time*0.001)%1, 1, 0.5));
 
                 convTex.offset.y -= 0.008;
@@ -426,13 +418,11 @@
                     const b=convBR[i]; 
                     if(b.s==='conveyor'){ 
                         b.m.position.z+=0.06; 
-                        // АНИМАЦИИ ХОДЬБЫ
                         let t = (time * 0.005) + b.animOffset;
                         if(b.m.td.t === 'jandelini') b.m.rotation.z = Math.sin(t)*0.2;
                         else if(b.m.td.t === 'ambalabu') b.m.position.y = 0.5 + Math.abs(Math.sin(t))*0.5;
                         else if(b.m.td.t === '67') b.m.rotation.y = Math.sin(t)*0.3;
                         else b.m.position.y = 0.5 + Math.abs(Math.sin(t*2))*0.2;
-
                         if(b.m.position.z > mapS/2+2){ scene.remove(b.m); convBR.splice(i,1); } 
                     } 
                 }
@@ -460,9 +450,34 @@
                     } 
                 }
 
+                // ЛОГИКА РАДУЖНОЙ МАШИНЫ
+                if(carriedBrainrot && carriedBrainrot.td.e === 'gold') {
+                    if(player.position.distanceTo(machinePad.position) < 2.5) {
+                        scene.remove(carriedBrainrot); carriedBrainrot = null; document.getElementById('carry-status').style.display='none';
+                        let nc = machineGoldCount + 1;
+                        if(nc >= 10) {
+                            set(ref(db, 'serverState'), { type: 'rainbow', evEnds: Date.now() + 600000, nxtEv: Date.now() + 600000 + 1800000, spawnsLeft: 5 });
+                            nc = 0; speakName("Rainbow Event Initiated");
+                        }
+                        update(ref(db, 'rainbowMachine'), { count: nc });
+                    }
+                }
+
                 if(carriedBrainrot){ carriedBrainrot.position.set(player.position.x, player.position.y+3, player.position.z); let mB=gBases[myBIdx]; if(player.position.distanceTo(new THREE.Vector3(mB.x,0,mB.z))<7){ placeOnBase(carriedBrainrot,mB); carriedBrainrot=null; document.getElementById('carry-status').style.display='none'; } }
 
-                gBases.forEach(b=>{ if(player.position.distanceTo(b.btn.position)<1.5){b.lA=true; b.lT=30; b.btn.position.y=0.05;} if(b.lA){ b.lsr.visible=true; if(b.owner!=='player'){ let lB=new THREE.Box3().setFromObject(b.lsr); let pB=new THREE.Box3().setFromObject(player); if(lB.intersectsBox(pB)){player.position.x+=(player.position.x>0?-1:1)*0.5;} } } else {b.lsr.visible=false; b.btn.position.y=0.1;} if(b.lT>0){b.lT-=1/60; if(b.lT<=0)b.lA=false;} });
+                gBases.forEach(b=>{ 
+                    // Анимация заезда с Зеленой зоны на Слот
+                    for(let i=b.movingBRs.length-1; i>=0; i--) {
+                        let item = b.movingBRs[i];
+                        let dx = item.tx - item.m.position.x; let dz = item.tz - item.m.position.z;
+                        if(Math.sqrt(dx*dx + dz*dz) < 0.1) {
+                            item.m.position.set(item.tx, 0.25, item.tz); b.movingBRs.splice(i, 1);
+                        } else { item.m.position.x += dx * 0.05; item.m.position.z += dz * 0.05; }
+                    }
+
+                    if(player.position.distanceTo(b.btn.position)<1.5){b.lA=true; b.lT=30; b.btn.position.y=0.05;} if(b.lA){ b.lsr.visible=true; if(b.owner!=='player'){ let lB=new THREE.Box3().setFromObject(b.lsr); let pB=new THREE.Box3().setFromObject(player); if(lB.intersectsBox(pB)){player.position.x+=(player.position.x>0?-1:1)*0.5;} } } else {b.lsr.visible=false; b.btn.position.y=0.1;} if(b.lT>0){b.lT-=1/60; if(b.lT<=0)b.lA=false;} 
+                });
+
                 traps.forEach((tr,i)=>{ if(player.position.distanceTo(tr.position)<1){ scene.remove(tr); traps.splice(i,1); isFrozen=true; document.getElementById('freeze-screen').style.display='flex'; setTimeout(()=>{isFrozen=false; document.getElementById('freeze-screen').style.display='none';},10000); } });
 
                 if(mV.x!==0||mV.z!==0){ const ag=Math.atan2(camera.position.x-player.position.x, camera.position.z-player.position.z); player.position.x+=(mV.x*Math.cos(ag)+mV.z*Math.sin(ag))*0.25; player.position.z+=(-mV.x*Math.sin(ag)+mV.z*Math.cos(ag))*0.25; player.rotation.y=ag+Math.atan2(mV.x,mV.z); }
