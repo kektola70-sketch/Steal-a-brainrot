@@ -8,46 +8,39 @@
         body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: Arial, sans-serif; user-select: none; }
         canvas { display: block; }
         
-        /* МЕНЮ ЛОББИ И АВТОРИЗАЦИИ */
-        #login-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
-        }
-        #login-box {
-            background: rgba(0, 0, 0, 0.85); padding: 30px; border-radius: 15px; border: 3px solid #00ff00;
-            text-align: center; color: white; width: 80%; max-width: 320px; box-shadow: 0 0 20px #00ff00;
-        }
+        /* МЕНЮ ЛОББИ */
+        #login-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        #login-box { background: rgba(0, 0, 0, 0.85); padding: 30px; border-radius: 15px; border: 3px solid #00ff00; text-align: center; color: white; width: 80%; max-width: 320px; box-shadow: 0 0 20px #00ff00; }
         #login-box h1 { margin-top: 0; color: #00ff00; font-size: 26px; margin-bottom: 5px; }
-        .auth-input { 
-            width: 90%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: none; 
-            font-size: 16px; text-align: center; font-weight: bold; background: #222; color: white; border: 1px solid #555;
-        }
-        .auth-input::placeholder { color: #aaa; }
-        #auth-btn { 
-            background: #00ff00; color: black; border: none; padding: 10px 30px; width: 100%;
-            font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px;
-        }
-        #auth-btn:active { background: #00cc00; }
+        .auth-input { width: 90%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: none; font-size: 16px; text-align: center; font-weight: bold; background: #222; color: white; border: 1px solid #555; }
+        #auth-btn { background: #00ff00; color: black; border: none; padding: 10px 30px; width: 100%; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; }
         #toggle-auth { color: #00ff00; cursor: pointer; font-size: 14px; text-decoration: underline; margin-top: 15px; }
-        #auth-status { font-size: 12px; color: yellow; margin-top: 10px; min-height: 15px; word-wrap: break-word; }
+        #auth-status { font-size: 12px; color: yellow; margin-top: 10px; }
 
         /* ИГРОВОЙ UI */
         #game-ui { display: none; }
-        #top-bar { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; gap: 10px; }
-        .ui-box { background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 8px; border: 2px solid white; font-weight: bold; }
+        
+        /* ЧАТ В ЛЕВОМ ВЕРХНЕМ УГЛУ */
+        #chat-container { position: absolute; top: 10px; left: 10px; width: 250px; height: 180px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1px solid white; display: flex; flex-direction: column; z-index: 20; pointer-events: auto; }
+        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 5px; color: white; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+        #chat-input-area { display: flex; border-top: 1px solid gray; }
+        #chat-input { width: 100%; background: transparent; border: none; color: white; padding: 5px; outline: none; }
+        #chat-send { background: #00ff00; border: none; padding: 5px 10px; font-weight: bold; cursor: pointer; border-radius: 0 0 8px 0; }
+
+        #top-bar { position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 10px; }
+        .ui-box { background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 8px; border: 2px solid white; font-weight: bold; text-align: right;}
         #money-txt { color: #00ff00; font-size: 20px; }
         #shop-btn { background: #ffaa00; color: black; border: 2px solid white; padding: 10px 20px; font-weight: bold; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        #shop-panel { display: none; position: absolute; top: 60px; left: 10px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px; border: 2px solid white; color: white; z-index: 20; }
+        #shop-panel { display: none; position: absolute; top: 70px; right: 10px; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px; border: 2px solid white; color: white; z-index: 20; }
         .buy-item-btn { background: #00ff00; color: black; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; border-radius: 5px; margin-top: 5px;}
         
-        #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; z-index: 10; }
+        #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; z-index: 10; pointer-events: auto; }
         .action-btn { position: absolute; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.5); border: 2px solid white; border-radius: 50%; font-size: 12px; font-weight: bold; color: black; z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; }
         #jump-btn { bottom: 30px; right: 20px; width: 70px; height: 70px; font-size: 14px;}
         #hit-btn { bottom: 110px; right: 20px; background: rgba(255, 0, 0, 0.5); color: white;}
         #trap-btn { bottom: 30px; right: 100px; }
 
-        #carry-status { position: absolute; top: 10px; right: 10px; background: rgba(255,0,0,0.8); color: white; padding: 10px; border-radius: 8px; font-weight: bold; display: none; border: 2px solid white; z-index: 10; }
+        #carry-status { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(255,0,0,0.8); color: white; padding: 10px; border-radius: 8px; font-weight: bold; display: none; border: 2px solid white; z-index: 10; text-align: center; }
         #action-ui { position: absolute; display: none; width: 140px; height: 50px; background: rgba(0, 0, 0, 0.8); border: 2px solid white; border-radius: 10px; color: white; font-weight: bold; font-size: 16px; text-align: center; line-height: 50px; transform: translate(-50%, -50%); z-index: 20; overflow: hidden; pointer-events: auto; }
         #action-progress { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: rgba(0, 255, 0, 0.5); z-index: -1; }
         #freeze-screen { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,255,0.3); z-index: 50; justify-content: center; align-items: center; color: white; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0 #000; }
@@ -55,34 +48,38 @@
 </head>
 <body>
 
-    <!-- МЕНЮ ЛОББИ -->
     <div id="login-screen">
         <div id="login-box">
             <h1>Steal a Brainrot</h1>
-            <p id="auth-title" style="color: #aaa; font-size: 14px; margin-bottom: 20px;">LOGIN TO SERVER</p>
-            
+            <p id="auth-title" style="color: #aaa; font-size: 14px; margin-bottom: 20px;">LOGIN</p>
             <input type="email" id="email-input" class="auth-input" placeholder="Email">
             <input type="password" id="password-input" class="auth-input" placeholder="Password">
-            
-            <!-- Поле Никнейма (видно только при регистрации) -->
-            <input type="text" id="nickname-input" class="auth-input" placeholder="Nickname (Game Name)" maxlength="12" style="display: none;">
-            
+            <input type="text" id="nickname-input" class="auth-input" placeholder="Nickname" maxlength="12" style="display: none;">
             <button id="auth-btn">LOGIN</button>
-            <p id="toggle-auth">Don't have an account? Register</p>
-            <p id="auth-status">Connecting to Firebase...</p>
+            <p id="toggle-auth">Register</p>
+            <p id="auth-status">Ready.</p>
         </div>
     </div>
 
     <div id="freeze-screen">TRAPPED!</div>
 
-    <!-- ИГРОВОЙ UI -->
     <div id="game-ui">
+        
+        <!-- ЧАТ -->
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Aa...">
+                <button id="chat-send">▶</button>
+            </div>
+        </div>
+
         <div id="top-bar">
+            <button id="shop-btn" onclick="document.getElementById('shop-panel').style.display='block'">SHOP</button>
             <div class="ui-box">
                 <span id="money-txt">0$</span><br>
                 <span id="income-txt" style="font-size:12px; color:#ccc;">+0$/sec</span>
             </div>
-            <button id="shop-btn" onclick="document.getElementById('shop-panel').style.display='block'">SHOP</button>
         </div>
 
         <div id="carry-status">CARRYING BRAINROT</div>
@@ -103,20 +100,15 @@
         <div id="jump-btn" class="action-btn">JUMP</div>
     </div>
 
-    <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     
-    <!-- НОВЫЙ МОДУЛЬНЫЙ FIREBASE v12 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-        // Модули Базы Данных
-        import { getDatabase, ref, set, onValue, update, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
-        // Модули Авторизации
+        import { getDatabase, ref, set, get, onValue, update, push, onChildAdded, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-        // КОНФИГУРАЦИЯ
         const firebaseConfig = {
             apiKey: "AIzaSyAmPLW5-F628bAQG4mG_V7JXIXcyMs1nfA",
             authDomain: "steal-a-brainrot-20fb8.firebaseapp.com",
@@ -131,121 +123,158 @@
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        let myPlayerId = null;
-        let nickname = "Guest";
+        let myPlayerId = null; let nickname = "Guest";
+        
+        // Звуковой движок
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSpawnSound() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150 + Math.random()*100, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+            osc.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        }
 
-        const statusTxt = document.getElementById('auth-status');
-        statusTxt.innerText = "System Ready. Please Login.";
-        statusTxt.style.color = "#00ff00";
-
-        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВХОД/РЕГИСТРАЦИЯ ---
+        // Авторизация
         let isLoginMode = true;
         document.getElementById('toggle-auth').onclick = () => {
             isLoginMode = !isLoginMode;
-            if (isLoginMode) {
-                document.getElementById('auth-title').innerText = "LOGIN TO SERVER";
-                document.getElementById('nickname-input').style.display = 'none';
-                document.getElementById('auth-btn').innerText = "LOGIN";
-                document.getElementById('toggle-auth').innerText = "Don't have an account? Register";
-            } else {
-                document.getElementById('auth-title').innerText = "CREATE ACCOUNT";
-                document.getElementById('nickname-input').style.display = 'block';
-                document.getElementById('auth-btn').innerText = "REGISTER & PLAY";
-                document.getElementById('toggle-auth').innerText = "Already have an account? Login";
-            }
-            statusTxt.innerText = "";
+            document.getElementById('auth-title').innerText = isLoginMode ? "LOGIN" : "REGISTER";
+            document.getElementById('nickname-input').style.display = isLoginMode ? 'none' : 'block';
+            document.getElementById('auth-btn').innerText = isLoginMode ? "LOGIN" : "REGISTER";
+            document.getElementById('toggle-auth').innerText = isLoginMode ? "Register" : "Login";
         };
 
-        // --- ЛОГИКА АВТОРИЗАЦИИ (FIREBASE AUTH) ---
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email-input').value.trim();
             const pass = document.getElementById('password-input').value.trim();
             const nick = document.getElementById('nickname-input').value.trim();
-
-            if (!email || !pass) { statusTxt.innerText = "Error: Fill all fields!"; statusTxt.style.color = "red"; return; }
-            if (!isLoginMode && nick.length < 3) { statusTxt.innerText = "Error: Nickname must be > 2 chars!"; statusTxt.style.color = "red"; return; }
-
-            statusTxt.innerText = "Processing...";
-            statusTxt.style.color = "yellow";
-
+            if (!email || !pass) return alert("Fill all fields!");
+            
             try {
-                let userCredential;
+                let uCred;
                 if (isLoginMode) {
-                    // Вход
-                    userCredential = await signInWithEmailAndPassword(auth, email, pass);
-                    nickname = userCredential.user.displayName || "UnknownPlayer";
+                    uCred = await signInWithEmailAndPassword(auth, email, pass);
+                    nickname = uCred.user.displayName || "Player";
                 } else {
-                    // Регистрация
-                    userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                    await updateProfile(userCredential.user, { displayName: nick });
+                    uCred = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(uCred.user, { displayName: nick });
                     nickname = nick;
                 }
-
-                // Получаем уникальный ID игрока из базы Firebase Auth
-                myPlayerId = userCredential.user.uid;
+                myPlayerId = uCred.user.uid;
                 
-                // Записываем игрока в игровую Базу Данных
-                const myPlayerRef = ref(db, 'players/' + myPlayerId);
-                set(myPlayerRef, { name: nickname, x: 10, y: 0, z: 20, rotY: 0 });
-                
-                // Удаляем с карты при выходе
-                onDisconnect(myPlayerRef).remove();
+                // Инициализация при входе
+                const pRef = ref(db, 'players/' + myPlayerId);
+                update(pRef, { name: nickname, x: 10, y: 0, z: 20 });
+                onDisconnect(pRef).update({ x: null, y: null, z: null }); // Удаляем только позицию, деньги оставляем
 
-                // Скрываем меню, запускаем игру
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('game-ui').style.display = 'block';
+                if(audioCtx.state === 'suspended') audioCtx.resume();
                 startGame();
-
-            } catch (error) {
-                console.error(error);
-                statusTxt.innerText = "Error: " + error.message;
-                statusTxt.style.color = "red";
-            }
+            } catch (err) { document.getElementById('auth-status').innerText = err.message; }
         };
 
-        // --- ОСНОВНОЙ 3D КОД ИГРЫ ---
-        function startGame() {
-            let money = 0; let incomePerSec = 0; let weapon = 'normal_glove'; let trapsCount = 0;
-            let isFrozen = false; let carriedBrainrot = null;
-            
-            function updateUI() { document.getElementById('money-txt').innerText = money + '$'; document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec'; document.getElementById('inv-traps').innerText = trapsCount; }
-            setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); } }, 1000);
+        // --- ГЛОБАЛЬНЫЙ ЧАТ ---
+        const chatInput = document.getElementById('chat-input');
+        const chatMsgs = document.getElementById('chat-messages');
+        document.getElementById('chat-send').onclick = () => {
+            const text = chatInput.value.trim();
+            if(text.length > 0) {
+                push(ref(db, 'chat'), { n: nickname, t: text });
+                chatInput.value = '';
+            }
+        };
+        onChildAdded(ref(db, 'chat'), (data) => {
+            const msg = data.val();
+            const div = document.createElement('div');
+            div.innerHTML = `<b style="color:yellow">${msg.n}:</b> ${msg.t}`;
+            chatMsgs.appendChild(div);
+            chatMsgs.scrollTop = chatMsgs.scrollHeight;
+        });
 
-            window.buyShopItem = function(item, price) {
-                if(money >= price) {
-                    if(item === 'trap' && trapsCount < 5) { money -= price; trapsCount++; }
-                    else if(item === 'big_glove' && weapon !== 'big_glove') { money -= price; weapon = 'big_glove'; buildMyPlayerModel(); }
-                    updateUI();
-                }
-            };
+        // --- ИВЕНТЫ СЕРВЕРА ---
+        let currEvent = 'none'; let evEnds = 0; let nxtEv = 0;
+        let spawnsLeft = 0;
+
+        onValue(ref(db, 'serverState'), (snap) => {
+            const d = snap.val(); let now = Date.now();
+            if (!d || (now > d.nxtEv && now > d.evEnds)) {
+                setTimeout(() => {
+                    let r = Math.random() * 100;
+                    let type = 'none'; let count = 0;
+                    if(r <= 1) { type = 'rainbow'; count = 5; }
+                    else if(r <= 11) { type = 'diamond'; count = 10; }
+                    else if(r <= 41) { type = 'gold'; count = 20; }
+                    
+                    let dur = type === 'none' ? 0 : 600000; // 10 минут ивент
+                    let next = Date.now() + dur + 1800000; // +30 мин ожидание
+                    set(ref(db, 'serverState'), { type: type, evEnds: Date.now() + dur, nxtEv: next, spawnsLeft: count });
+                }, Math.random() * 1000);
+            } else {
+                currEvent = d.type; evEnds = d.evEnds; nxtEv = d.nxtEv; spawnsLeft = d.spawnsLeft || 0;
+            }
+        });
+
+
+        // --- ОСНОВНОЙ КОД ---
+        async function startGame() {
+            let money = 0; let incomePerSec = 0; let weapon = 'normal_glove'; let trapsCount = 0;
+            let isFrozen = false; let carriedBrainrot = null; let myBaseSlots = [];
+            
+            // ЗАГРУЗКА ДАННЫХ ИГРОКА (SAVE/LOAD)
+            const snap = await get(ref(db, 'players/' + myPlayerId));
+            if(snap.exists() && snap.val().money) {
+                money = snap.val().money;
+                myBaseSlots = snap.val().baseSlots || [];
+            }
+
+            function savePlayerData() {
+                update(ref(db, 'players/' + myPlayerId), { money: money, baseSlots: myBaseSlots });
+            }
+
+            function updateUI() { document.getElementById('money-txt').innerText = money + '$'; document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec'; document.getElementById('inv-traps').innerText = trapsCount; }
+            setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); savePlayerData(); } }, 1000);
+
+            window.buyShopItem = function(i, p) { if(money>=p){ if(i==='trap'&&trapsCount<5){money-=p;trapsCount++;}else if(i==='big_glove'&&weapon!=='big_glove'){money-=p;weapon='big_glove';buildPlayer();} updateUI(); } };
 
             const scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 20, 70);
             const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
-            
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(20, 40, 20); dirLight.castShadow = true; scene.add(dirLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5)); const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(20, 40, 20); dirLight.castShadow = true; scene.add(dirLight);
 
             function createTex(c, dc, isC) { const cv = document.createElement('canvas'); cv.width=256; cv.height=256; const ctx = cv.getContext('2d'); ctx.fillStyle=c; ctx.fillRect(0,0,256,256); if(isC){ ctx.fillStyle=dc; for(let i=-256;i<512;i+=64){ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(256,i+128); ctx.lineTo(256,i+160); ctx.lineTo(0,i+32); ctx.fill();} }else{ for(let i=0;i<8000;i++){ctx.fillStyle=Math.random()>0.5?dc:c; ctx.fillRect(Math.random()*256,Math.random()*256,2,2);} } const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; }
             
-            const mapSize = 80; 
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(mapSize, mapSize), new THREE.MeshStandardMaterial({ map: createTex('#3a5f0b', '#4c7a11', false) })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+            const mapS = 80; const floor = new THREE.Mesh(new THREE.PlaneGeometry(mapS, mapS), new THREE.MeshStandardMaterial({ map: createTex('#3a5f0b', '#4c7a11', false) })); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+            const convW = 8; const convTex = createTex('#222', '#aa0000', true); convTex.repeat.set(1, 20); const conveyor = new THREE.Mesh(new THREE.BoxGeometry(convW, 0.5, mapS), new THREE.MeshStandardMaterial({ map: convTex })); conveyor.position.set(0, 0.25, 0); conveyor.receiveShadow = true; scene.add(conveyor);
 
-            const convWidth = 8; const convTex = createTex('#222', '#aa0000', true); convTex.repeat.set(1, 20);
-            const conveyor = new THREE.Mesh(new THREE.BoxGeometry(convWidth, 0.5, mapSize), new THREE.MeshStandardMaterial({ map: convTex })); conveyor.position.set(0, 0.25, 0); conveyor.receiveShadow = true; scene.add(conveyor);
+            const wMat = new THREE.MeshStandardMaterial({ color: 0x666666 }); const wH=6; const wT=2;
+            function mkW(x,z,w,d){ const wall = new THREE.Mesh(new THREE.BoxGeometry(w,wH,d),wMat); wall.position.set(x,wH/2,z); wall.receiveShadow=wall.castShadow=true; scene.add(wall); }
+            mkW(-mapS/2,0,wT,mapS); mkW(mapS/2,0,wT,mapS); const sW=(mapS-convW)/2; mkW(-convW/2-sW/2,-mapS/2,sW,wT); mkW(convW/2+sW/2,-mapS/2,sW,wT); mkW(-convW/2-sW/2,mapS/2,sW,wT); mkW(convW/2+sW/2,mapS/2,sW,wT);   
+            const vdMat = new THREE.MeshBasicMaterial({color: 0x000000}); const vdGeo = new THREE.PlaneGeometry(convW, wH);
+            const vN = new THREE.Mesh(vdGeo, vdMat); vN.position.set(0, wH/2, -mapS/2+0.1); scene.add(vN);
+            const vS = new THREE.Mesh(vdGeo, vdMat); vS.position.set(0, wH/2, mapS/2-0.1); vS.rotation.y = Math.PI; scene.add(vS);
 
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666 }); const wH = 6; const wT = 2;
-            function mkWall(x,z,w,d){ const wall = new THREE.Mesh(new THREE.BoxGeometry(w,wH,d),wallMat); wall.position.set(x,wH/2,z); wall.receiveShadow=wall.castShadow=true; scene.add(wall); }
-            mkWall(-mapSize/2, 0, wT, mapSize); mkWall(mapSize/2, 0, wT, mapSize); 
-            const sideW = (mapSize - convWidth) / 2;
-            mkWall(-convWidth/2 - sideW/2, -mapSize/2, sideW, wT); mkWall(convWidth/2 + sideW/2, -mapSize/2, sideW, wT); 
-            mkWall(-convWidth/2 - sideW/2, mapSize/2, sideW, wT); mkWall(convWidth/2 + sideW/2, mapSize/2, sideW, wT);   
-            const voidMat = new THREE.MeshBasicMaterial({color: 0x000000}); const voidGeo = new THREE.PlaneGeometry(convWidth, wH);
-            const vN = new THREE.Mesh(voidGeo, voidMat); vN.position.set(0, wH/2, -mapSize/2 + 0.1); scene.add(vN);
-            const vS = new THREE.Mesh(voidGeo, voidMat); vS.position.set(0, wH/2, mapSize/2 - 0.1); vS.rotation.y = Math.PI; scene.add(vS);
+            // ТАЙМЕР ИВЕНТОВ
+            const scrCv = document.createElement('canvas'); scrCv.width=512; scrCv.height=256; const scrCtx = scrCv.getContext('2d');
+            const scrTex = new THREE.CanvasTexture(scrCv); const scrM = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.5), new THREE.MeshBasicMaterial({map: scrTex}));
+            scrM.position.set(0, 8, -mapS/2+1); scene.add(scrM);
+            function fmtTime(ms) { if(ms<=0)return "00:00"; let t=Math.floor(ms/1000); let m=Math.floor(t/60); let s=t%60; return (m<10?"0"+m:m)+":"+(s<10?"0"+s:s); }
+            setInterval(() => {
+                let now = Date.now(); scrCtx.fillStyle = '#111'; scrCtx.fillRect(0,0,512,256); scrCtx.textAlign = 'center';
+                if(currEvent !== 'none' && now < evEnds) {
+                    scrCtx.fillStyle='#ff0000'; scrCtx.font='bold 50px Arial'; scrCtx.fillText("EVENT ACTIVE!", 256, 80);
+                    scrCtx.fillStyle= currEvent==='gold'?'#ffd700':currEvent==='diamond'?'#00ffff':'#ff00ff'; scrCtx.font='bold 55px Arial'; scrCtx.fillText(`${currEvent.toUpperCase()} ENCHANT`, 256, 150);
+                    scrCtx.fillStyle='#ffffff'; scrCtx.font='bold 40px Arial'; scrCtx.fillText(`Left: ${spawnsLeft} | ` + fmtTime(evEnds - now), 256, 220);
+                } else {
+                    scrCtx.fillStyle='#00ff00'; scrCtx.font='bold 45px Arial'; scrCtx.fillText("NEXT EVENT IN:", 256, 100);
+                    scrCtx.fillStyle='#ffffff'; scrCtx.font='bold 70px Arial'; scrCtx.fillText(fmtTime(nxtEv - now), 256, 180);
+                } scrTex.needsUpdate = true;
+            }, 1000);
 
-            let player, stick; 
-            function buildMyPlayerModel() {
+            let player, stick; function buildPlayer() {
                 if(player) scene.remove(player); player = new THREE.Group();
                 const mBl=new THREE.MeshStandardMaterial({color:0x0055ff}); const mY=new THREE.MeshStandardMaterial({color:0xffff00}); const mW=new THREE.MeshStandardMaterial({color:0x8b4513}); const mR=new THREE.MeshStandardMaterial({color:0xff0000});
                 const t=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,0.6),mBl); t.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.8),mY); h.position.y=2.2;
@@ -253,82 +282,126 @@
                 const aL=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.4),mY); aL.position.set(-0.7,1.3,0); const aR=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.4),mY); aR.position.set(0.7,1.3,0);
                 stick=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.5),mW); stick.position.set(0,-0.5,0.5); stick.rotation.x=Math.PI/2;
                 const gM=new THREE.Mesh(new THREE.SphereGeometry(weapon==='big_glove'?0.6:0.3),mR); gM.position.set(0,0.8,0); stick.add(gM); aR.add(stick);
-                player.add(t,h,lL,lR,aL,aR); player.traverse(c=>{if(c.isMesh){c.castShadow=c.receiveShadow=true;}});
-                player.position.set(10,0,20); scene.add(player);
+                player.add(t,h,lL,lR,aL,aR); player.traverse(c=>{if(c.isMesh){c.castShadow=c.receiveShadow=true;}}); player.position.set(10,0,20); scene.add(player);
+                const cN = document.createElement('canvas'); cN.width=256; cN.height=64; const ctxN=cN.getContext('2d'); ctxN.textAlign='center'; ctxN.fillStyle='#00ff00'; ctxN.font='bold 30px Arial'; ctxN.fillText(nickname, 128, 40);
+                const nS = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(cN), transparent: true})); nS.position.set(0, 3, 0); nS.scale.set(3, 0.75, 1); player.add(nS);
+            } buildPlayer();
 
-                const cN = document.createElement('canvas'); cN.width=256; cN.height=64; const ctxN=cN.getContext('2d');
-                ctxN.textAlign='center'; ctxN.fillStyle='#00ff00'; ctxN.font='bold 30px Arial'; ctxN.fillText(nickname, 128, 40);
-                const nS = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(cN), transparent: true}));
-                nS.position.set(0, 3, 0); nS.scale.set(3, 0.75, 1); player.add(nS);
-            } 
-            buildMyPlayerModel();
-
-            // МУЛЬТИПЛЕЕР (Получение данных о других)
-            const networkPlayers = {};
-            function createNetworkPlayer(id, name, x, y, z) {
-                const pGroup = new THREE.Group();
-                const mBl=new THREE.MeshStandardMaterial({color:0xaa0000}); const mY=new THREE.MeshStandardMaterial({color:0xffaaaa});
-                const t=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,0.6),mBl); t.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.8),mY); h.position.y=2.2;
-                pGroup.add(t,h); pGroup.traverse(c=>{if(c.isMesh)c.castShadow=true;});
-                
-                const cN = document.createElement('canvas'); cN.width=256; cN.height=64; const ctxN=cN.getContext('2d');
-                ctxN.textAlign='center'; ctxN.fillStyle='white'; ctxN.font='bold 30px Arial'; ctxN.fillText(name, 128, 40);
-                const nS = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(cN), transparent: true}));
-                nS.position.set(0, 3, 0); nS.scale.set(3, 0.75, 1); pGroup.add(nS);
-                pGroup.position.set(x, y, z); scene.add(pGroup); networkPlayers[id] = pGroup;
-            }
-
-            onValue(ref(db, 'players'), (snapshot) => {
-                const data = snapshot.val() || {};
-                for(let id in data) {
-                    if(id === myPlayerId) continue;
-                    let pData = data[id];
-                    if(!networkPlayers[id]) { createNetworkPlayer(id, pData.name, pData.x, pData.y, pData.z); } 
-                    else {
-                        networkPlayers[id].position.set(pData.x, pData.y, pData.z);
-                        if(pData.rotY) networkPlayers[id].rotation.y = pData.rotY;
-                    }
+            const netP = {}; onValue(ref(db, 'players'), (s) => {
+                const d = s.val() || {};
+                for(let id in d) {
+                    if(id === myPlayerId || !d[id].x) continue;
+                    if(!netP[id]) {
+                        const pG = new THREE.Group(); const mB=new THREE.MeshStandardMaterial({color:0xaa0000}); const mY=new THREE.MeshStandardMaterial({color:0xffaaaa});
+                        const t=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,0.6),mB); t.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.8),mY); h.position.y=2.2; pG.add(t,h);
+                        const cN=document.createElement('canvas'); cN.width=256; cN.height=64; const cX=cN.getContext('2d'); cX.textAlign='center'; cX.fillStyle='white'; cX.font='bold 30px Arial'; cX.fillText(d[id].name,128,40);
+                        const nS=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cN), transparent:true})); nS.position.set(0,3,0); nS.scale.set(3,0.75,1); pG.add(nS);
+                        pG.position.set(d[id].x, d[id].y, d[id].z); scene.add(pG); netP[id] = pG;
+                    } else { netP[id].position.set(d[id].x, d[id].y, d[id].z); if(d[id].rotY) netP[id].rotation.y = d[id].rotY; }
                 }
-                for(let id in networkPlayers) { if(!data[id]) { scene.remove(networkPlayers[id]); delete networkPlayers[id]; } }
+                for(let id in netP) { if(!d[id] || !d[id].x) { scene.remove(netP[id]); delete netP[id]; } }
             });
 
-            const controls = new THREE.OrbitControls(camera, renderer.domElement); camera.position.set(10, 6, 28); controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; 
-            let prevP = player.position.clone();
+            const controls = new THREE.OrbitControls(camera, renderer.domElement); camera.position.set(10, 6, 28); controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; let prevP = player.position.clone();
 
-            function createTextSprite(t, c, yO) { const can = document.createElement('canvas'); can.width=512; can.height=128; const ctx=can.getContext('2d'); ctx.textAlign='center'; ctx.fillStyle=c; ctx.font='bold 40px Arial'; ctx.fillText(t, 256, 70); const sp=new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(can), transparent: true})); sp.position.y=yO; sp.scale.set(6, 1.5, 1); return sp; }
+            function crTxt(t, ench, p, inc) { 
+                const can=document.createElement('canvas'); can.width=512; can.height=160; const cx=can.getContext('2d'); cx.textAlign='center'; 
+                cx.fillStyle='white'; cx.font='bold 40px Arial'; cx.fillText(t, 256, 40); 
+                
+                let eCol = 'white'; let eTxt = '';
+                if(ench==='gold'){eCol='#ffd700'; eTxt='[ GOLD ] x1.5';}
+                if(ench==='diamond'){eCol='#00ffff'; eTxt='[ DIAMOND ] x5';}
+                if(ench==='rainbow'){eCol='#ff00ff'; eTxt='[ RAINBOW ] x15';}
+                if(eTxt) { cx.fillStyle=eCol; cx.font='bold 25px Arial'; cx.fillText(eTxt, 256, 75); }
 
-            const gameBases = []; let pBaseIdx = Math.floor(Math.random() * 8);
+                cx.fillStyle='yellow'; cx.font='bold 30px Arial'; cx.fillText(`Price: ${p}$`, 256, 110);
+                cx.fillStyle='#00ff00'; cx.font='bold 30px Arial'; cx.fillText(`${inc}$ / sec`, 256, 145);
+                const sp=new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(can), transparent: true})); sp.scale.set(5, 1.5, 1); return sp; 
+            }
+
+            const gBases = []; let myBIdx = Math.floor(Math.random() * 8);
             function mkBase(idx, x, z, col, isL) {
-                const b = { x, z, slots: [], owner: idx===pBaseIdx?'player':'bot', activeBrainrots: [] };
-                const fl = new THREE.Mesh(new THREE.BoxGeometry(14,0.1,12), new THREE.MeshStandardMaterial({color:0xaaaaaa})); fl.position.set(x,0.05,z); scene.add(fl);
-                const dir = isL ? 1 : -1; const wM = new THREE.MeshStandardMaterial({color:0x555555});
-                const bW = new THREE.Mesh(new THREE.BoxGeometry(0.5,5,12),wM); bW.position.set(x-(6.75*dir),2.5,z); scene.add(bW);
-                const s1 = new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s1.position.set(x,2.5,z-5.75); scene.add(s1);
-                const s2 = new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s2.position.set(x,2.5,z+5.75); scene.add(s2);
-                const rf = new THREE.Mesh(new THREE.BoxGeometry(14.5,0.5,12.5), new THREE.MeshStandardMaterial({color:col})); rf.position.set(x,5.25,z); scene.add(rf);
+                const b = { x, z, slots: [], owner: idx===myBIdx?'player':'bot', aBR: [] };
+                const fl=new THREE.Mesh(new THREE.BoxGeometry(14,0.1,12), new THREE.MeshStandardMaterial({color:0xaaaaaa})); fl.position.set(x,0.05,z); scene.add(fl);
+                const d=isL?1:-1; const wM=new THREE.MeshStandardMaterial({color:0x555555});
+                const bW=new THREE.Mesh(new THREE.BoxGeometry(0.5,5,12),wM); bW.position.set(x-(6.75*d),2.5,z); scene.add(bW);
+                const s1=new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s1.position.set(x,2.5,z-5.75); scene.add(s1); const s2=new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s2.position.set(x,2.5,z+5.75); scene.add(s2);
+                const rf=new THREE.Mesh(new THREE.BoxGeometry(14.5,0.5,12.5), new THREE.MeshStandardMaterial({color:col})); rf.position.set(x,5.25,z); scene.add(rf);
                 
-                const sign = createTextSprite(b.owner==='player'?"MY BASE":"BASE", b.owner==='player'?"#00ff00":"#ff4444", 7); sign.position.x=x; sign.position.z=z; scene.add(sign);
+                const cN=document.createElement('canvas'); cN.width=512; cN.height=128; const cX=cN.getContext('2d'); cX.textAlign='center'; cX.fillStyle=b.owner==='player'?"#00ff00":"#ff4444"; cX.font='bold 40px Arial'; cX.fillText(b.owner==='player'?"MY BASE":"BASE",256,70); const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cN), transparent:true})); sign.position.set(x,7,z); sign.scale.set(6,1.5,1); scene.add(sign);
 
-                const stX = x + (4*dir); const sM = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5});
-                for(let r=0;r<2;r++){ for(let c=0;c<5;c++){ const sm = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,1.6),sM); let sx=stX-(c*2.2*dir); let sz=(z-2.5)+(r*5); sm.position.set(sx,0.15,sz); scene.add(sm); b.slots.push({x:sx,y:0.25,z:sz,isOccupied:false,brMesh:null}); } }
+                const sX=x+(4*d); const sM=new THREE.MeshStandardMaterial({color:0xffffff});
+                for(let r=0;r<2;r++){ for(let c=0;c<5;c++){ const sm=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,1.6),sM); let px=sX-(c*2.2*d); let pz=(z-2.5)+(r*5); sm.position.set(px,0.15,pz); scene.add(sm); b.slots.push({x:px,y:0.25,z:pz,occ:false,m:null}); } }
+                b.btn=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.2),new THREE.MeshStandardMaterial({color:0xffff00})); b.btn.position.set(x+(5*d),0.1,z); scene.add(b.btn); b.lA=false; b.lT=0;
+                b.lsr=new THREE.Mesh(new THREE.BoxGeometry(0.2,5,11),new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.5})); b.lsr.position.set(x+(6.8*d),2.5,z); b.lsr.visible=false; scene.add(b.lsr);
+                gBases.push(b);
+            }
+            mkBase(0,-30,-30,0x0055ff,true); mkBase(1,-30,-10,0x0055ff,true); mkBase(2,-30,10,0x0055ff,true); mkBase(3,-30,30,0x0055ff,true);
+            mkBase(4,30,-30,0xff2200,false); mkBase(5,30,-10,0xff2200,false); mkBase(6,30,10,0xff2200,false); mkBase(7,30,30,0xff2200,false);
+
+            // НОВЫЕ БРЕЙНРОТЫ
+            const convBR = []; const rainbowMats = [];
+            function buildBR(t, ench) {
+                const gr=new THREE.Group(); let incMult = ench==='gold'?1.5:ench==='diamond'?5:ench==='rainbow'?15:1;
                 
-                b.btnMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.2),new THREE.MeshStandardMaterial({color:0xffff00})); b.btnMesh.position.set(x+(5*dir),0.1,z); scene.add(b.btnMesh); b.laserActive=false; b.laserT=0;
-                b.laserMesh=new THREE.Mesh(new THREE.BoxGeometry(0.2,5,11),new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.5})); b.laserMesh.position.set(x+(6.8*dir),2.5,z); b.laserMesh.visible=false; scene.add(b.laserMesh);
-                gameBases.push(b);
+                let mat; // Главный материал тела
+                if(ench==='gold') mat=new THREE.MeshStandardMaterial({color:0xffd700, metalness:0.8, roughness:0.2});
+                else if(ench==='diamond') mat=new THREE.MeshStandardMaterial({color:0x00ffff, transparent:true, opacity:0.8, metalness:0.9});
+                else if(ench==='rainbow') { mat=new THREE.MeshStandardMaterial({color:0xff0000}); rainbowMats.push(mat); }
+                
+                const mG=mat||new THREE.MeshStandardMaterial({color:0x888888}); const mY=mat||new THREE.MeshStandardMaterial({color:0xffff00}); const mB=mat||new THREE.MeshStandardMaterial({color:0x0055ff}); const mP=mat||new THREE.MeshStandardMaterial({color:0xffccaa}); const mBk=new THREE.MeshStandardMaterial({color:0x111111});
+                
+                if(t==='noobini'){ const l=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mB);l.position.y=0.4; const to=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),new THREE.MeshStandardMaterial({color:0x00aa00}));to.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),mY);h.position.y=1.9; gr.add(l,to,h); gr.td={n:'Noobini', p:0, i:1*incMult, t, e:ench}; }
+                else if(t==='pipikiwi'){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,16),mat||new THREE.MeshStandardMaterial({color:0x6b8e23}));b.position.y=0.9;b.scale.set(1,1.1,1); const h=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.3,0.4),mG);h.position.set(0,0.9,0.6); gr.add(b,h); gr.td={n:'Pipi Kiwi', p:50, i:2*incMult, t, e:ench}; }
+                else if(t==='jandelini'){ const b=new THREE.Mesh(new THREE.BoxGeometry(0.8,1,0.6),mG);b.position.y=0.5; const h=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.7),mP);h.position.y=1.4; const tl=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.2,0.8),mG);tl.position.set(0,0.5,-0.4);tl.rotation.x=-0.5; gr.add(b,h,tl); gr.td={n:'Raccoon Jandelini', p:150, i:4*incMult, t, e:ench}; }
+                else if(t==='corni'){ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,1.2,8),mY);b.position.y=0.6; const e1=new THREE.Mesh(new THREE.SphereGeometry(0.2),mG);e1.position.set(-0.3,1.2,0); const e2=new THREE.Mesh(new THREE.SphereGeometry(0.2),mG);e2.position.set(0.3,1.2,0); gr.add(b,e1,e2); gr.td={n:'Pipi Corni', p:200, i:5*incMult, t, e:ench}; }
+                else if(t==='ambalabu'){ const b=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.2,8,16),mBk);b.position.y=0.7; const h=new THREE.Mesh(new THREE.SphereGeometry(0.4),new THREE.MeshStandardMaterial({color:0x00aa00}));h.position.set(0,0.7,0); gr.add(b,h); gr.td={n:'Boneca Ambalabu', p:500, i:12*incMult, t, e:ench}; }
+                else if(t==='67'){ const g6=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.2),mB);g6.position.set(-0.3,0.5,0); const g7=new THREE.Mesh(new THREE.BoxGeometry(0.4,1,0.2),mB);g7.position.set(0.3,0.5,0); const ey=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.1,0.1),new THREE.MeshStandardMaterial({color:0xffffff}));ey.position.set(0,0.8,0.15); gr.add(g6,g7,ey); gr.td={n:'Brainrot 67', p:700, i:15*incMult, t, e:ench}; }
+                
+                gr.traverse(c=>{if(c.isMesh)c.castShadow=true;});
+                const lbl = crTxt(gr.td.n, ench, gr.td.p, gr.td.i); lbl.position.y = 2.5; gr.add(lbl);
+                return gr;
             }
-            mkBase(0, -30, -30, 0x0055ff, true); mkBase(1, -30, -10, 0x0055ff, true); mkBase(2, -30, 10, 0x0055ff, true); mkBase(3, -30, 30, 0x0055ff, true);
-            mkBase(4, 30, -30, 0xff2200, false); mkBase(5, 30, -10, 0xff2200, false); mkBase(6, 30, 10, 0xff2200, false); mkBase(7, 30, 30, 0xff2200, false);
 
-            const convBR = [];
-            function buildBR(t) {
-                const gr=new THREE.Group(); const mY=new THREE.MeshStandardMaterial({color:0xffff00}); const mG=new THREE.MeshStandardMaterial({color:0x00aa00}); const mB=new THREE.MeshStandardMaterial({color:0x0055ff}); const mO=new THREE.MeshStandardMaterial({color:0xffa500}); const mK=new THREE.MeshStandardMaterial({color:0x6b8e23}); const mGr=new THREE.MeshStandardMaterial({color:0x888888}); const mBl=new THREE.MeshStandardMaterial({color:0x111111});
-                if(t==='noobini'){ const l=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mB);l.position.y=0.4; const to=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mG);to.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),mY);h.position.y=1.9; const p=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.1,16),mO);p.position.y=2.25; gr.add(l,to,h,p); gr.td={n:'Noobini', p:0, i:1}; }
-                else{ const b=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,16),mK);b.position.y=0.9;b.scale.set(1,1.1,1); const h=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.3,0.4),mGr);h.position.set(0,0.9,0.6); const m=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.12,0.1),mBl);m.position.set(0,0.92,0.78); gr.add(b,h,m); gr.td={n:'Pipi Kiwi', p:100, i:2}; }
-                gr.traverse(c=>{if(c.isMesh)c.castShadow=true;}); return gr;
+            // СПАВНЕР (Проверка шансов и ивентов)
+            setInterval(()=>{ 
+                let e = 'normal';
+                if(currEvent !== 'none' && spawnsLeft > 0) { e = currEvent; update(ref(db, 'serverState'), {spawnsLeft: spawnsLeft - 1}); }
+
+                let r = Math.random() * 100; let t = '';
+                if(r < 20) t = Math.random()>0.5 ? 'ambalabu' : '67'; // 20% Rare
+                else if(r < 50) t = Math.random()>0.5 ? 'jandelini' : 'corni'; // 30% Uncommon
+                else t = Math.random()>0.5 ? 'noobini' : 'pipikiwi'; // 50% Common
+
+                const b = buildBR(t, e); b.position.set((Math.random()-0.5)*4, 0.5, -mapS/2 - 2); 
+                scene.add(b); convBR.push({m:b, s:'conveyor', animOffset: Math.random()*10});
+                playSpawnSound();
+            }, 3000);
+
+            // ВОССТАНОВЛЕНИЕ БАЗЫ ПРИ ВХОДЕ
+            if(myBaseSlots.length > 0) {
+                myBaseSlots.forEach((savedSlot, i) => {
+                    if(savedSlot && savedSlot.t) {
+                        const b = buildBR(savedSlot.t, savedSlot.e);
+                        let sl = gBases[myBIdx].slots[i];
+                        b.position.set(sl.x, sl.y, sl.z);
+                        sl.occ = true; sl.m = b;
+                        gBases[myBIdx].aBR.push(b);
+                        incomePerSec += b.td.i;
+                    }
+                });
             }
-            setInterval(()=>{ const b=buildBR(Math.random()>0.5?'noobini':'pipikiwi'); b.position.set((Math.random()-0.5)*4, 0.5, -mapSize/2 - 2); scene.add(b); convBR.push({m:b, s:'conveyor'}); }, 3000);
 
-            function placeOnBase(br, base) { let slot=base.slots.find(s=>!s.isOccupied); if(slot){br.position.set(slot.x,slot.y,slot.z); slot.isOccupied=true; slot.brMesh=br; base.activeBrainrots.push(br); if(base.owner==='player'){incomePerSec+=br.td.i; updateUI();}} }
+            function placeOnBase(br, base) { 
+                let idx = base.slots.findIndex(s=>!s.occ); 
+                if(idx !== -1){ 
+                    let sl = base.slots[idx]; br.position.set(sl.x,sl.y,sl.z); br.rotation.set(0,0,0); sl.occ=true; sl.m=br; base.aBR.push(br); 
+                    if(base.owner==='player'){
+                        incomePerSec+=br.td.i; updateUI();
+                        myBaseSlots[idx] = { t: br.td.t, e: br.td.e }; savePlayerData();
+                    }
+                } 
+            }
 
             let mV={x:0,z:0}; nipplejs.create({zone:document.getElementById('joystick-zone'),mode:'static',position:{left:'70px',bottom:'70px'},color:'white'}).on('move',(e,d)=>{mV.x=Math.cos(d.angle.radian)*Math.min(d.force,1); mV.z=-Math.sin(d.angle.radian)*Math.min(d.force,1);}).on('end',()=>{mV={x:0,z:0};});
             let vY=0; let isGnd=true; document.getElementById('jump-btn').ontouchstart=(e)=>{e.preventDefault(); if(isGnd&&!isFrozen){vY=0.4; isGnd=false;}};
@@ -343,38 +416,61 @@
             function animate() {
                 requestAnimationFrame(animate);
                 if(isFrozen) return renderer.render(scene, camera);
+                let time = Date.now();
+
+                // Радужная анимация
+                rainbowMats.forEach(m => m.color.setHSL((time*0.001)%1, 1, 0.5));
 
                 convTex.offset.y -= 0.008;
-                for(let i=convBR.length-1; i>=0; i--){ const b=convBR[i]; if(b.s==='conveyor'){ b.m.position.z+=0.06; if(b.m.position.z > mapSize/2+2){ scene.remove(b.m); convBR.splice(i,1); } } }
+                for(let i=convBR.length-1; i>=0; i--){ 
+                    const b=convBR[i]; 
+                    if(b.s==='conveyor'){ 
+                        b.m.position.z+=0.06; 
+                        // АНИМАЦИИ ХОДЬБЫ
+                        let t = (time * 0.005) + b.animOffset;
+                        if(b.m.td.t === 'jandelini') b.m.rotation.z = Math.sin(t)*0.2;
+                        else if(b.m.td.t === 'ambalabu') b.m.position.y = 0.5 + Math.abs(Math.sin(t))*0.5;
+                        else if(b.m.td.t === '67') b.m.rotation.y = Math.sin(t)*0.3;
+                        else b.m.position.y = 0.5 + Math.abs(Math.sin(t*2))*0.2;
+
+                        if(b.m.position.z > mapS/2+2){ scene.remove(b.m); convBR.splice(i,1); } 
+                    } 
+                }
 
                 let cl=null; let dst=4; let typ='';
                 if(!carriedBrainrot){
                     convBR.forEach(b=>{let d=player.position.distanceTo(b.m.position); if(d<dst){dst=d;cl=b;typ='buy';}});
-                    gameBases.forEach(b=>{b.activeBrainrots.forEach(bm=>{let d=player.position.distanceTo(bm.position); if(d<dst){dst=d;cl={m:bm,b:b};typ=b.owner==='player'?'sell':'steal';}});});
+                    gBases.forEach(b=>{b.aBR.forEach(bm=>{let d=player.position.distanceTo(bm.position); if(d<dst){dst=d;cl={m:bm,b:b};typ=b.owner==='player'?'sell':'steal';}});});
                 }
                 if(cl){ tObj=cl; aType=typ; const p=cl.m.position.clone(); p.y+=2; p.project(camera); if(p.z<1){ aUI.style.display='block'; aUI.style.left=`${(p.x*0.5+0.5)*innerWidth}px`; aUI.style.top=`${(p.y*-0.5+0.5)*innerHeight}px`; if(!isH){ if(typ==='buy'){aTx.innerText=money>=cl.m.td.p?`BUY ${cl.m.td.p}$`:'NO $'; aTx.style.color=money>=cl.m.td.p?'white':'red';} if(typ==='sell'){aTx.innerText=`SELL +${cl.m.td.p}$`; aTx.style.color='yellow';} if(typ==='steal'){aTx.innerText=`STEAL`; aTx.style.color='red';} } } else {aUI.style.display='none'; endAct();} } else {tObj=null; aUI.style.display='none'; endAct();}
 
-                if(isH && tObj){ let el=Date.now()-hStart; aPr.style.width=`${Math.min((el/1000)*100,100)}%`; if(el>=1000){ if(aType==='buy' && money>=tObj.m.td.p){ money-=tObj.m.td.p; updateUI(); convBR.splice(convBR.indexOf(tObj),1); placeOnBase(tObj.m, gameBases[pBaseIdx]); } else if(aType==='sell'){ money+=tObj.m.td.p; incomePerSec-=tObj.m.td.i; updateUI(); scene.remove(tObj.m); tObj.b.activeBrainrots.splice(tObj.b.activeBrainrots.indexOf(tObj.m),1); let sl=tObj.b.slots.find(s=>s.brMesh===tObj.m); if(sl)sl.isOccupied=false; } else if(aType==='steal'){ carriedBrainrot=tObj.m; tObj.b.activeBrainrots.splice(tObj.b.activeBrainrots.indexOf(tObj.m),1); let sl=tObj.b.slots.find(s=>s.brMesh===tObj.m); if(sl)sl.isOccupied=false; document.getElementById('carry-status').style.display='block'; } tObj=null; aUI.style.display='none'; endAct(); } }
+                if(isH && tObj){ 
+                    let el=Date.now()-hStart; aPr.style.width=`${Math.min((el/1000)*100,100)}%`; 
+                    if(el>=1000){ 
+                        if(aType==='buy' && money>=tObj.m.td.p){ money-=tObj.m.td.p; convBR.splice(convBR.indexOf(tObj),1); placeOnBase(tObj.m, gBases[myBIdx]); } 
+                        else if(aType==='sell'){ 
+                            money+=tObj.m.td.p; incomePerSec-=tObj.m.td.i; scene.remove(tObj.m); tObj.b.aBR.splice(tObj.b.aBR.indexOf(tObj.m),1); 
+                            let sIdx=tObj.b.slots.findIndex(s=>s.m===tObj.m); if(sIdx!==-1){tObj.b.slots[sIdx].occ=false; myBaseSlots[sIdx]=null;} 
+                        } 
+                        else if(aType==='steal'){ 
+                            carriedBrainrot=tObj.m; tObj.b.aBR.splice(tObj.b.aBR.indexOf(tObj.m),1); 
+                            let sl=tObj.b.slots.find(s=>s.m===tObj.m); if(sl)sl.occ=false; document.getElementById('carry-status').style.display='block'; 
+                        } 
+                        tObj=null; aUI.style.display='none'; endAct(); updateUI(); savePlayerData();
+                    } 
+                }
 
-                if(carriedBrainrot){ carriedBrainrot.position.set(player.position.x, player.position.y+3, player.position.z); let mB=gameBases[pBaseIdx]; if(player.position.distanceTo(new THREE.Vector3(mB.x,0,mB.z))<7){ placeOnBase(carriedBrainrot,mB); carriedBrainrot=null; document.getElementById('carry-status').style.display='none'; } }
+                if(carriedBrainrot){ carriedBrainrot.position.set(player.position.x, player.position.y+3, player.position.z); let mB=gBases[myBIdx]; if(player.position.distanceTo(new THREE.Vector3(mB.x,0,mB.z))<7){ placeOnBase(carriedBrainrot,mB); carriedBrainrot=null; document.getElementById('carry-status').style.display='none'; } }
 
-                gameBases.forEach(b=>{ if(player.position.distanceTo(b.btnMesh.position)<1.5){b.laserActive=true; b.laserT=30; b.btnMesh.position.y=0.05;} if(b.laserActive){ b.laserMesh.visible=true; if(b.owner!=='player'){ let lB=new THREE.Box3().setFromObject(b.laserMesh); let pB=new THREE.Box3().setFromObject(player); if(lB.intersectsBox(pB)){player.position.x+=(player.position.x>0?-1:1)*0.5;} } } else {b.laserMesh.visible=false; b.btnMesh.position.y=0.1;} if(b.laserT>0){b.laserT-=1/60; if(b.laserT<=0)b.laserActive=false;} });
-
+                gBases.forEach(b=>{ if(player.position.distanceTo(b.btn.position)<1.5){b.lA=true; b.lT=30; b.btn.position.y=0.05;} if(b.lA){ b.lsr.visible=true; if(b.owner!=='player'){ let lB=new THREE.Box3().setFromObject(b.lsr); let pB=new THREE.Box3().setFromObject(player); if(lB.intersectsBox(pB)){player.position.x+=(player.position.x>0?-1:1)*0.5;} } } else {b.lsr.visible=false; b.btn.position.y=0.1;} if(b.lT>0){b.lT-=1/60; if(b.lT<=0)b.lA=false;} });
                 traps.forEach((tr,i)=>{ if(player.position.distanceTo(tr.position)<1){ scene.remove(tr); traps.splice(i,1); isFrozen=true; document.getElementById('freeze-screen').style.display='flex'; setTimeout(()=>{isFrozen=false; document.getElementById('freeze-screen').style.display='none';},10000); } });
 
                 if(mV.x!==0||mV.z!==0){ const ag=Math.atan2(camera.position.x-player.position.x, camera.position.z-player.position.z); player.position.x+=(mV.x*Math.cos(ag)+mV.z*Math.sin(ag))*0.25; player.position.z+=(-mV.x*Math.sin(ag)+mV.z*Math.cos(ag))*0.25; player.rotation.y=ag+Math.atan2(mV.x,mV.z); }
                 vY-=0.02; player.position.y+=vY; if(player.position.y<=0){player.position.y=0;vY=0;isGnd=true;}
 
-                syncTimer++;
-                if(myPlayerId && syncTimer > 2) {
-                    syncTimer = 0;
-                    if(mV.x !== 0 || mV.z !== 0 || !isGnd) { 
-                        update(ref(db, 'players/' + myPlayerId), { x: player.position.x, y: player.position.y, z: player.position.z, rotY: player.rotation.y });
-                    }
-                }
+                syncTimer++; if(myPlayerId && syncTimer > 2) { syncTimer = 0; if(mV.x !== 0 || mV.z !== 0 || !isGnd) { update(ref(db, 'players/' + myPlayerId), { x: player.position.x, y: player.position.y, z: player.position.z, rotY: player.rotation.y }); } }
 
-                camera.position.x+=player.position.x-prevP.x; camera.position.y+=player.position.y-prevP.y; camera.position.z+=player.position.z-prevP.z; controls.target.copy(player.position); controls.target.y+=1.5; controls.update(); prevP.copy(player.position);
-                renderer.render(scene, camera);
+                camera.position.x+=player.position.x-prevP.x; camera.position.y+=player.position.y-prevP.y; camera.position.z+=player.position.z-prevP.z; controls.target.copy(player.position); controls.target.y+=1.5; controls.update(); prevP.copy(player.position); renderer.render(scene, camera);
             }
             window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight);});
             animate();
