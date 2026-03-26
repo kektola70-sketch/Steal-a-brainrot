@@ -8,7 +8,6 @@
         body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: Arial, sans-serif; }
         canvas { display: block; }
         
-        /* Баланс игрока */
         #balance-ui {
             position: absolute; bottom: 180px; left: 20px; 
             background: rgba(0, 0, 0, 0.7); color: #00ff00;
@@ -25,15 +24,13 @@
         }
         #jump-btn:active { background-color: rgba(255, 255, 255, 0.8); }
 
-        /* Кнопка покупки над брейнротом */
         #buy-btn {
             position: absolute; display: none; width: 120px; height: 50px;
             background: rgba(0, 0, 0, 0.6); border: 2px solid white; border-radius: 10px;
             color: white; font-weight: bold; font-size: 18px; text-align: center; line-height: 50px;
-            transform: translate(-50%, -50%); /* Центрирование по координатам */
+            transform: translate(-50%, -50%); 
             z-index: 20; overflow: hidden; user-select: none; pointer-events: auto;
         }
-        /* Полоса прогресса при зажатии */
         #buy-progress {
             position: absolute; top: 0; left: 0; height: 100%; width: 0%;
             background: rgba(0, 255, 0, 0.5); z-index: -1;
@@ -61,18 +58,8 @@
         let money = 0;
         let incomePerSec = 0;
         const balanceUI = document.getElementById('balance-ui');
-        
-        function updateBalance() {
-            balanceUI.innerHTML = `Money: ${money}$ <br><span style="font-size: 16px; color: #aaa;">(+${incomePerSec}$/sec)</span>`;
-        }
-
-        // Каждую секунду начисляем деньги
-        setInterval(() => {
-            if (incomePerSec > 0) {
-                money += incomePerSec;
-                updateBalance();
-            }
-        }, 1000);
+        function updateBalance() { balanceUI.innerHTML = `Money: ${money}$ <br><span style="font-size: 16px; color: #aaa;">(+${incomePerSec}$/sec)</span>`; }
+        setInterval(() => { if (incomePerSec > 0) { money += incomePerSec; updateBalance(); } }, 1000);
 
         // --- БАЗОВАЯ НАСТРОЙКА ---
         const scene = new THREE.Scene();
@@ -110,9 +97,70 @@
         floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 
         const conveyorTex = createConveyorTexture();
-        const conveyor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, mapSize), new THREE.MeshStandardMaterial({ map: conveyorTex }));
+        const conveyorWidth = 8;
+        const conveyor = new THREE.Mesh(new THREE.BoxGeometry(conveyorWidth, 0.5, mapSize), new THREE.MeshStandardMaterial({ map: conveyorTex }));
         conveyor.position.set(0, 0.25, 0); conveyor.receiveShadow = true; scene.add(conveyor);
 
+        // --- СОЗДАНИЕ СТЕН И ТЕМНОТЫ ---
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 });
+        const wallHeight = 6;
+        const wallThickness = 2;
+
+        function createWall(x, z, width, depth) {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, depth), wallMat);
+            wall.position.set(x, wallHeight / 2, z);
+            wall.receiveShadow = true; wall.castShadow = true;
+            scene.add(wall);
+        }
+
+        // Западная и Восточная стены (сплошные)
+        createWall(-mapSize/2, 0, wallThickness, mapSize);
+        createWall(mapSize/2, 0, wallThickness, mapSize);
+
+        // Северная стена (с отверстием по центру для конвейера)
+        const sideWallWidth = (mapSize - conveyorWidth) / 2; // 36
+        createWall(-conveyorWidth/2 - sideWallWidth/2, -mapSize/2, sideWallWidth, wallThickness); // Левая часть
+        createWall(conveyorWidth/2 + sideWallWidth/2, -mapSize/2, sideWallWidth, wallThickness);  // Правая часть
+
+        // Южная стена (тоже с отверстием)
+        createWall(-conveyorWidth/2 - sideWallWidth/2, mapSize/2, sideWallWidth, wallThickness); 
+        createWall(conveyorWidth/2 + sideWallWidth/2, mapSize/2, sideWallWidth, wallThickness);  
+
+        // ТЕМНОТА (Абсолютно черные панели за отверстиями)
+        const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Без освещения, просто черная дыра
+        const voidGeo = new THREE.PlaneGeometry(conveyorWidth, wallHeight);
+        
+        // Северная дыра (откуда выезжают)
+        const voidNorth = new THREE.Mesh(voidGeo, voidMat);
+        voidNorth.position.set(0, wallHeight/2, -mapSize/2 + 0.1); 
+        scene.add(voidNorth);
+
+        // Южная дыра (куда заезжают)
+        const voidSouth = new THREE.Mesh(voidGeo, voidMat);
+        voidSouth.position.set(0, wallHeight/2, mapSize/2 - 0.1);
+        voidSouth.rotation.y = Math.PI; // Поворачиваем "лицом" к карте
+        scene.add(voidSouth);
+
+
+        // --- БАЗЫ ---
+        function createBase(x, z, teamColor) {
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(14, 0.1, 12), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
+            baseMesh.position.set(x, 0.05, z); baseMesh.receiveShadow = true; scene.add(baseMesh);
+            const borderMesh = new THREE.Mesh(new THREE.BoxGeometry(14.4, 0.05, 12.4), new THREE.MeshBasicMaterial({ color: teamColor }));
+            borderMesh.position.set(x, 0.03, z); scene.add(borderMesh);
+            const slotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true });
+            const startX = x - 7 + 2.5; const startZ = z - 6 + 3.5;
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), slotMat);
+                    slot.rotation.x = -Math.PI / 2; slot.position.set(startX + col * 2.2, 0.12, startZ + row * 5); scene.add(slot);
+                }
+            }
+        }
+        createBase(-22, -30, 0x0055ff); createBase(-22, -10, 0x0055ff); createBase(-22, 10, 0x0055ff); createBase(-22, 30, 0x0055ff);
+        createBase(22, -30, 0xff2200);  createBase(22, -10, 0xff2200);  createBase(22, 10, 0xff2200);   createBase(22, 30, 0xff2200);
+
+        // --- ИГРОК И КАМЕРА ---
         const player = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 1.2), new THREE.MeshStandardMaterial({ color: 0xffcc00 }));
         player.position.set(10, 1.2, 20); player.castShadow = true; scene.add(player);
 
@@ -125,8 +173,7 @@
         
         function createTextLabel(name, price, income) {
             const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128; const ctx = canvas.getContext('2d');
-            ctx.textAlign = 'center';
-            ctx.fillStyle = 'white'; ctx.font = 'bold 40px Arial'; ctx.fillText(name, 256, 40);
+            ctx.textAlign = 'center'; ctx.fillStyle = 'white'; ctx.font = 'bold 40px Arial'; ctx.fillText(name, 256, 40);
             ctx.fillStyle = 'yellow'; ctx.font = 'bold 30px Arial'; ctx.fillText(`Price: ${price}$`, 256, 80);
             ctx.fillStyle = '#00ff00'; ctx.font = 'bold 30px Arial'; ctx.fillText(`${income}$ / sec`, 256, 115);
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
@@ -168,10 +215,13 @@
         function spawnBrainrot() {
             const types = ['noobini', 'pipikiwi'];
             const br = buildBrainrotModel(types[Math.floor(Math.random() * types.length)]);
-            br.position.set((Math.random() - 0.5) * 4, 0.5, -mapSize/2); 
+            
+            // Спавним за текстурой темноты, чтобы они плавно выезжали
+            br.position.set((Math.random() - 0.5) * 4, 0.5, -mapSize/2 - 2); 
+            
             scene.add(br); activeBrainrots.push(br);
         }
-        setInterval(spawnBrainrot, 3000);
+        setInterval(spawnBrainrot, 3000); // Появление каждые 3 сек
 
         // --- УПРАВЛЕНИЕ И ЛОГИКА ПОКУПКИ ---
         let moveVector = { x: 0, z: 0 };
@@ -182,109 +232,71 @@
         let velocityY = 0; let isGrounded = true;
         document.getElementById('jump-btn').addEventListener('touchstart', (e) => { e.preventDefault(); if (isGrounded) { velocityY = 0.4; isGrounded = false; } });
 
-        // ЛОГИКА КНОПКИ BUY
         const buyBtn = document.getElementById('buy-btn');
         const buyProgress = document.getElementById('buy-progress');
         const buyText = document.getElementById('buy-text');
         
-        let targetBR = null; // Брейнрот, рядом с которым мы стоим
-        let isHolding = false;
-        let holdStartTime = 0;
+        let targetBR = null; let isHolding = false; let holdStartTime = 0;
 
         function cancelBuy() {
-            isHolding = false;
-            buyProgress.style.width = '0%';
-            if (targetBR) {
-                buyText.innerText = money >= targetBR.price ? `BUY: ${targetBR.price}$` : 'Not enough $';
-            }
+            isHolding = false; buyProgress.style.width = '0%';
+            if (targetBR) buyText.innerText = money >= targetBR.price ? `BUY: ${targetBR.price}$` : 'Not enough $';
         }
 
         function startBuy(e) {
             e.preventDefault();
-            if (targetBR && money >= targetBR.price) {
-                isHolding = true;
-                holdStartTime = Date.now();
-                buyText.innerText = 'BUYING...';
-            }
+            if (targetBR && money >= targetBR.price) { isHolding = true; holdStartTime = Date.now(); buyText.innerText = 'BUYING...'; }
         }
 
-        // Слушатели для зажатия кнопки
-        buyBtn.addEventListener('mousedown', startBuy);
-        buyBtn.addEventListener('touchstart', startBuy, {passive: false});
-        
-        window.addEventListener('mouseup', cancelBuy);
-        window.addEventListener('touchend', cancelBuy);
+        buyBtn.addEventListener('mousedown', startBuy); buyBtn.addEventListener('touchstart', startBuy, {passive: false});
+        window.addEventListener('mouseup', cancelBuy); window.addEventListener('touchend', cancelBuy);
 
         // --- ИГРОВОЙ ЦИКЛ ---
+        // Ограничитель карты для игрока (строго внутри стен и не может войти в черную дыру)
+        const boundaryBorder = mapSize / 2 - wallThickness / 2 - 0.6; // 0.6 - радиус игрока
+
         function animate() {
             requestAnimationFrame(animate);
-            conveyorTex.offset.y -= 0.02;
+            
+            // Замедленная анимация ленты
+            conveyorTex.offset.y -= 0.008;
 
-            // Движение конвейера
+            // Замедленное движение брейнротов
             for (let i = activeBrainrots.length - 1; i >= 0; i--) {
                 const br = activeBrainrots[i];
-                br.position.z += 0.15; 
-                if (br.position.z > mapSize/2) { scene.remove(br); activeBrainrots.splice(i, 1); }
+                br.position.z += 0.05; 
+                // Удаляем, когда они полностью заехали в темноту
+                if (br.position.z > mapSize/2 + 2) { scene.remove(br); activeBrainrots.splice(i, 1); }
             }
 
-            // Поиск ближайшего брейнрота
-            let closestDist = 4; // Радиус взаимодействия
-            let closestBR = null;
-            activeBrainrots.forEach(br => {
-                let dist = player.position.distanceTo(br.position);
-                if (dist < closestDist) { closestDist = dist; closestBR = br; }
-            });
+            let closestDist = 4; let closestBR = null;
+            activeBrainrots.forEach(br => { let dist = player.position.distanceTo(br.position); if (dist < closestDist) { closestDist = dist; closestBR = br; } });
 
-            // Отображение кнопки покупки
             if (closestBR) {
                 targetBR = closestBR;
-                
-                // Превращаем 3D координаты в 2D координаты экрана
-                const screenPos = closestBR.position.clone();
-                screenPos.y += 1.5; // Кнопка висит на уровне груди
-                screenPos.project(camera);
+                const screenPos = closestBR.position.clone(); screenPos.y += 1.5; screenPos.project(camera);
+                const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth; const y = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
 
-                const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
-
-                // Показываем кнопку только если объект перед камерой (z < 1)
                 if (screenPos.z < 1) {
-                    buyBtn.style.display = 'block';
-                    buyBtn.style.left = `${x}px`;
-                    buyBtn.style.top = `${y}px`;
-
+                    buyBtn.style.display = 'block'; buyBtn.style.left = `${x}px`; buyBtn.style.top = `${y}px`;
                     if (!isHolding) {
                         buyText.innerText = money >= targetBR.price ? `BUY: ${targetBR.price}$` : 'Not enough $';
                         buyText.style.color = money >= targetBR.price ? 'white' : 'red';
                     }
-                } else {
-                    buyBtn.style.display = 'none'; cancelBuy();
-                }
-            } else {
-                targetBR = null; buyBtn.style.display = 'none'; cancelBuy();
-            }
+                } else { buyBtn.style.display = 'none'; cancelBuy(); }
+            } else { targetBR = null; buyBtn.style.display = 'none'; cancelBuy(); }
 
-            // Логика полоски прогресса
             if (isHolding && targetBR) {
                 let elapsed = Date.now() - holdStartTime;
-                let percent = Math.min((elapsed / 2000) * 100, 100);
-                buyProgress.style.width = `${percent}%`;
+                buyProgress.style.width = `${Math.min((elapsed / 2000) * 100, 100)}%`;
 
-                if (elapsed >= 2000) { // Прошло 2 секунды
-                    // ПОКУПКА СОВЕРШЕНА
-                    money -= targetBR.price;
-                    incomePerSec += targetBR.income;
-                    updateBalance();
-
-                    // Удаляем с конвейера
-                    scene.remove(targetBR);
-                    activeBrainrots.splice(activeBrainrots.indexOf(targetBR), 1);
-                    
+                if (elapsed >= 2000) {
+                    money -= targetBR.price; incomePerSec += targetBR.income; updateBalance();
+                    scene.remove(targetBR); activeBrainrots.splice(activeBrainrots.indexOf(targetBR), 1);
                     targetBR = null; buyBtn.style.display = 'none'; cancelBuy();
                 }
             }
 
-            // Физика игрока
             if (moveVector.x !== 0 || moveVector.z !== 0) {
                 const angle = Math.atan2(camera.position.x - player.position.x, camera.position.z - player.position.z);
                 player.position.x += (moveVector.x * Math.cos(angle) + moveVector.z * Math.sin(angle)) * 0.25;
@@ -294,7 +306,12 @@
             let gLevel = Math.abs(player.position.x) < 4.6 ? 1.7 : 1.2; 
             if (player.position.y <= gLevel) { player.position.y = gLevel; velocityY = 0; isGrounded = true; }
 
-            // Следование камеры
+            // Строгое столкновение игрока со стенами и "шторками"
+            if (player.position.x > boundaryBorder) player.position.x = boundaryBorder;
+            if (player.position.x < -boundaryBorder) player.position.x = -boundaryBorder;
+            if (player.position.z > boundaryBorder) player.position.z = boundaryBorder;
+            if (player.position.z < -boundaryBorder) player.position.z = -boundaryBorder;
+
             camera.position.x += player.position.x - prevPlayerPos.x;
             camera.position.y += player.position.y - prevPlayerPos.y;
             camera.position.z += player.position.z - prevPlayerPos.z;
