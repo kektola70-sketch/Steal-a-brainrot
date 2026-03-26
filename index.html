@@ -5,18 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Steal a Brainrot</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; }
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; font-family: Arial, sans-serif; }
         canvas { display: block; }
+        
+        /* Баланс игрока */
+        #balance-ui {
+            position: absolute; bottom: 180px; left: 20px; 
+            background: rgba(0, 0, 0, 0.7); color: #00ff00;
+            padding: 10px 20px; border-radius: 10px; font-size: 24px; font-weight: bold;
+            border: 2px solid #00ff00; z-index: 10; user-select: none;
+        }
+
         #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; z-index: 10; }
+        
         #jump-btn {
             position: absolute; bottom: 40px; right: 40px; width: 80px; height: 80px;
             background-color: rgba(255, 255, 255, 0.5); border: 2px solid white; border-radius: 50%;
             font-size: 16px; font-weight: bold; color: black; z-index: 10; user-select: none;
         }
         #jump-btn:active { background-color: rgba(255, 255, 255, 0.8); }
+
+        /* Кнопка покупки над брейнротом */
+        #buy-btn {
+            position: absolute; display: none; width: 120px; height: 50px;
+            background: rgba(0, 0, 0, 0.6); border: 2px solid white; border-radius: 10px;
+            color: white; font-weight: bold; font-size: 18px; text-align: center; line-height: 50px;
+            transform: translate(-50%, -50%); /* Центрирование по координатам */
+            z-index: 20; overflow: hidden; user-select: none; pointer-events: auto;
+        }
+        /* Полоса прогресса при зажатии */
+        #buy-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: rgba(0, 255, 0, 0.5); z-index: -1;
+        }
     </style>
 </head>
 <body>
+
+    <div id="balance-ui">Money: 0$ <br><span style="font-size: 16px; color: #aaa;">(+0$/sec)</span></div>
+    
+    <div id="buy-btn">
+        <div id="buy-progress"></div>
+        <span id="buy-text">BUY</span>
+    </div>
 
     <div id="joystick-zone"></div>
     <button id="jump-btn">JUMP</button>
@@ -26,6 +57,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 
     <script>
+        // --- ЭКОНОМИКА ---
+        let money = 0;
+        let incomePerSec = 0;
+        const balanceUI = document.getElementById('balance-ui');
+        
+        function updateBalance() {
+            balanceUI.innerHTML = `Money: ${money}$ <br><span style="font-size: 16px; color: #aaa;">(+${incomePerSec}$/sec)</span>`;
+        }
+
+        // Каждую секунду начисляем деньги
+        setInterval(() => {
+            if (incomePerSec > 0) {
+                money += incomePerSec;
+                updateBalance();
+            }
+        }, 1000);
+
+        // --- БАЗОВАЯ НАСТРОЙКА ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB); 
         scene.fog = new THREE.Fog(0x87CEEB, 20, 70); 
@@ -38,262 +87,223 @@
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
-
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(20, 40, 20);
-        dirLight.castShadow = true; 
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
+        dirLight.position.set(20, 40, 20); dirLight.castShadow = true; 
         scene.add(dirLight);
 
         function createGrassTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#3a5f0b'; ctx.fillRect(0,0,256,256);
-            for(let i=0; i<8000; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#4c7a11' : '#2d4a08';
-                ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
-            }
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(30, 30);
-            return tex;
+            for(let i=0; i<8000; i++) { ctx.fillStyle = Math.random() > 0.5 ? '#4c7a11' : '#2d4a08'; ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2); }
+            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(30, 30); return tex;
         }
 
         function createConveyorTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#222'; ctx.fillRect(0,0,256,256);
-            ctx.fillStyle = '#aa0000';
-            for(let i=-256; i<512; i+=64) {
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i + 128); ctx.lineTo(256, i + 160); ctx.lineTo(0, i + 32); ctx.fill();
-            }
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(1, 20);
-            return tex;
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#222'; ctx.fillRect(0,0,256,256); ctx.fillStyle = '#aa0000';
+            for(let i=-256; i<512; i+=64) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i + 128); ctx.lineTo(256, i + 160); ctx.lineTo(0, i + 32); ctx.fill(); }
+            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1, 20); return tex;
         }
 
         const mapSize = 80; 
-        const floorGeo = new THREE.PlaneGeometry(mapSize, mapSize);
-        const floorMat = new THREE.MeshStandardMaterial({ map: createGrassTexture(), roughness: 0.8 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true; 
-        scene.add(floor);
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(mapSize, mapSize), new THREE.MeshStandardMaterial({ map: createGrassTexture() }));
+        floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 
-        const conveyorWidth = 8;
-        const conveyorGeo = new THREE.BoxGeometry(conveyorWidth, 0.5, mapSize);
         const conveyorTex = createConveyorTexture();
-        const conveyorMat = new THREE.MeshStandardMaterial({ map: conveyorTex, roughness: 0.5 });
-        const conveyor = new THREE.Mesh(conveyorGeo, conveyorMat);
-        conveyor.position.set(0, 0.25, 0); 
-        conveyor.receiveShadow = true; conveyor.castShadow = true;
-        scene.add(conveyor);
-
-        const gameBases = []; 
-        function createBase(x, z, teamColor) {
-            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(14, 0.1, 12), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
-            baseMesh.position.set(x, 0.05, z); baseMesh.receiveShadow = true; scene.add(baseMesh);
-
-            const borderMesh = new THREE.Mesh(new THREE.BoxGeometry(14.4, 0.05, 12.4), new THREE.MeshBasicMaterial({ color: teamColor }));
-            borderMesh.position.set(x, 0.03, z); scene.add(borderMesh);
-
-            const slots = [];
-            const slotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true });
-            const startX = x - 7 + 2.5; const startZ = z - 6 + 3.5;
-            
-            for (let row = 0; row < 2; row++) {
-                for (let col = 0; col < 5; col++) {
-                    const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), slotMat);
-                    slot.rotation.x = -Math.PI / 2; 
-                    slot.position.set(startX + col * 2.2, 0.12, startZ + row * 5);
-                    scene.add(slot);
-                    slots.push({ x: slot.position.x, y: slot.position.y, z: slot.position.z, isOccupied: false });
-                }
-            }
-            gameBases.push({ x, z, teamColor, slots });
-        }
-
-        createBase(-22, -30, 0x0055ff); createBase(-22, -10, 0x0055ff);
-        createBase(-22, 10, 0x0055ff);  createBase(-22, 30, 0x0055ff);
-        createBase(22, -30, 0xff2200);  createBase(22, -10, 0xff2200);
-        createBase(22, 10, 0xff2200);   createBase(22, 30, 0xff2200);
+        const conveyor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.5, mapSize), new THREE.MeshStandardMaterial({ map: conveyorTex }));
+        conveyor.position.set(0, 0.25, 0); conveyor.receiveShadow = true; scene.add(conveyor);
 
         const player = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 1.2), new THREE.MeshStandardMaterial({ color: 0xffcc00 }));
-        player.position.set(10, 1.2, 20);
-        player.castShadow = true; 
-        scene.add(player);
+        player.position.set(10, 1.2, 20); player.castShadow = true; scene.add(player);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(10, 6, 28); 
-        controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; 
+        camera.position.set(10, 6, 28); controls.enablePan = false; controls.maxPolarAngle = Math.PI / 2 - 0.1; 
         let prevPlayerPos = player.position.clone();
 
-        // --- СИСТЕМА АВТОРСКИХ БРЕЙНРОТОВ ---
+        // --- БРЕЙНРОТЫ ---
         const activeBrainrots = [];
         
-        function createTextLabel(name, rarityText, earningText) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
+        function createTextLabel(name, price, income) {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128; const ctx = canvas.getContext('2d');
             ctx.textAlign = 'center';
-            // Имя
-            ctx.fillStyle = 'white'; ctx.font = 'bold 45px Arial'; ctx.fillText(name, 256, 45);
-            // Редкость
-            ctx.fillStyle = '#cccccc'; ctx.font = 'bold 25px Arial'; ctx.fillText(`[ ${rarityText} ]`, 256, 80);
-            // Заработок
-            ctx.fillStyle = '#00ff00'; ctx.font = 'bold 30px Arial'; ctx.fillText(earningText, 256, 115);
-
+            ctx.fillStyle = 'white'; ctx.font = 'bold 40px Arial'; ctx.fillText(name, 256, 40);
+            ctx.fillStyle = 'yellow'; ctx.font = 'bold 30px Arial'; ctx.fillText(`Price: ${price}$`, 256, 80);
+            ctx.fillStyle = '#00ff00'; ctx.font = 'bold 30px Arial'; ctx.fillText(`${income}$ / sec`, 256, 115);
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
-            sprite.scale.set(4, 1, 1); 
-            return sprite;
+            sprite.scale.set(4, 1, 1); return sprite;
         }
 
         function buildBrainrotModel(type) {
             const group = new THREE.Group();
-            
-            // Материалы
-            const matYellow = new THREE.MeshStandardMaterial({color: 0xffff00});
-            const matGreen = new THREE.MeshStandardMaterial({color: 0x00aa00});
-            const matBlue = new THREE.MeshStandardMaterial({color: 0x0055ff});
-            const matOrange = new THREE.MeshStandardMaterial({color: 0xffa500});
-            
-            const matKiwi = new THREE.MeshStandardMaterial({color: 0x6b8e23}); // Цвет Киви
-            const matGrey = new THREE.MeshStandardMaterial({color: 0x888888}); // Цвет Енота
-            const matBlack = new THREE.MeshStandardMaterial({color: 0x111111}); // Маска Енота
+            const mYellow = new THREE.MeshStandardMaterial({color: 0xffff00}); const mGreen = new THREE.MeshStandardMaterial({color: 0x00aa00});
+            const mBlue = new THREE.MeshStandardMaterial({color: 0x0055ff}); const mOrange = new THREE.MeshStandardMaterial({color: 0xffa500});
+            const mKiwi = new THREE.MeshStandardMaterial({color: 0x6b8e23}); const mGrey = new THREE.MeshStandardMaterial({color: 0x888888});
+            const mBlack = new THREE.MeshStandardMaterial({color: 0x111111});
 
             if (type === 'noobini') {
-                const legs = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), matBlue); legs.position.y = 0.4;
-                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), matGreen); torso.position.y = 1.2;
-                const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), matYellow); head.position.y = 1.9;
-                const pizza = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.1, 16), matOrange); pizza.position.y = 2.25;
+                const legs = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), mBlue); legs.position.y = 0.4;
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), mGreen); torso.position.y = 1.2;
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), mYellow); head.position.y = 1.9;
+                const pizza = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.1, 16), mOrange); pizza.position.y = 2.25;
                 group.add(legs, torso, head, pizza);
-                group.nameText = 'Noobini Pizanini';
+                group.nameText = 'Noobini Pizanini'; group.price = 0; group.income = 1;
             } 
             else if (type === 'pipikiwi') {
-                // Pipi kiwi (Енот в Киви)
-                
-                // Тело киви (Овальное)
-                const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), matKiwi);
-                body.position.y = 0.9;
-                body.scale.set(1, 1.1, 1); // Делаем вытянутым
-
-                // Голова енота (Торчит из центра спереди)
-                const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.4), matGrey);
-                head.position.set(0, 0.9, 0.6); // Выдвинута вперед
-
-                // Черная маска енота на глазах
-                const mask = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.1), matBlack);
-                mask.position.set(0, 0.92, 0.78);
-
-                // Лапки енота (Возле головы по бокам)
-                const armL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), matGrey);
-                armL.position.set(-0.4, 0.9, 0.6);
-                armL.rotation.z = -0.5;
-
-                const armR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), matGrey);
-                armR.position.set(0.4, 0.9, 0.6);
-                armR.rotation.z = 0.5;
-
-                // Ноги енота (Под киви)
-                const legL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), matGrey);
-                legL.position.set(-0.25, 0.2, 0);
-
-                const legR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), matGrey);
-                legR.position.set(0.25, 0.2, 0);
-
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), mKiwi); body.position.y = 0.9; body.scale.set(1, 1.1, 1);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.4), mGrey); head.position.set(0, 0.9, 0.6);
+                const mask = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.1), mBlack); mask.position.set(0, 0.92, 0.78);
+                const armL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), mGrey); armL.position.set(-0.4, 0.9, 0.6); armL.rotation.z = -0.5;
+                const armR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), mGrey); armR.position.set(0.4, 0.9, 0.6); armR.rotation.z = 0.5;
+                const legL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), mGrey); legL.position.set(-0.25, 0.2, 0);
+                const legR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), mGrey); legR.position.set(0.25, 0.2, 0);
                 group.add(body, head, mask, armL, armR, legL, legR);
-                group.nameText = 'Pipi Kiwi';
+                group.nameText = 'Pipi Kiwi'; group.price = 100; group.income = 2;
             }
 
             group.traverse(child => { if(child.isMesh) child.castShadow = true; });
-
-            // Добавляем табличку: Имя, Редкость, Доход
-            const label = createTextLabel(group.nameText, "Common", "1$ / sec");
-            label.position.set(0, 2.8, 0); 
-            group.add(label);
-
+            const label = createTextLabel(group.nameText, group.price, group.income); label.position.set(0, 3.2, 0); group.add(label);
             return group;
         }
 
         function spawnBrainrot() {
-            // Теперь спавнятся только твои 2 персонажа
             const types = ['noobini', 'pipikiwi'];
-            const randomType = types[Math.floor(Math.random() * types.length)];
-            
-            const brainrot = buildBrainrotModel(randomType);
-            const randomX = (Math.random() - 0.5) * 4; 
-            brainrot.position.set(randomX, 0.5, -mapSize/2); 
-            
-            scene.add(brainrot);
-            activeBrainrots.push(brainrot);
+            const br = buildBrainrotModel(types[Math.floor(Math.random() * types.length)]);
+            br.position.set((Math.random() - 0.5) * 4, 0.5, -mapSize/2); 
+            scene.add(br); activeBrainrots.push(br);
         }
-
         setInterval(spawnBrainrot, 3000);
 
-        // --- УПРАВЛЕНИЕ ---
+        // --- УПРАВЛЕНИЕ И ЛОГИКА ПОКУПКИ ---
         let moveVector = { x: 0, z: 0 };
-        const joystickManager = nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'static', position: { left: '70px', bottom: '70px' }, color: 'white' });
-        joystickManager.on('move', (evt, data) => { const force = Math.min(data.force, 1); moveVector.x = Math.cos(data.angle.radian) * force; moveVector.z = -Math.sin(data.angle.radian) * force; });
-        joystickManager.on('end', () => { moveVector = { x: 0, z: 0 }; });
+        nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'static', position: { left: '70px', bottom: '70px' }, color: 'white' })
+        .on('move', (e, d) => { moveVector.x = Math.cos(d.angle.radian) * Math.min(d.force, 1); moveVector.z = -Math.sin(d.angle.radian) * Math.min(d.force, 1); })
+        .on('end', () => { moveVector = { x: 0, z: 0 }; });
 
         let velocityY = 0; let isGrounded = true;
-        const jumpAction = (e) => { e.preventDefault(); if (isGrounded) { velocityY = 0.4; isGrounded = false; } };
-        const jumpBtn = document.getElementById('jump-btn');
-        jumpBtn.addEventListener('touchstart', jumpAction, {passive: false}); jumpBtn.addEventListener('mousedown', jumpAction);
+        document.getElementById('jump-btn').addEventListener('touchstart', (e) => { e.preventDefault(); if (isGrounded) { velocityY = 0.4; isGrounded = false; } });
 
-        const speed = 0.25; 
-        const boundary = mapSize / 2 - 2;
+        // ЛОГИКА КНОПКИ BUY
+        const buyBtn = document.getElementById('buy-btn');
+        const buyProgress = document.getElementById('buy-progress');
+        const buyText = document.getElementById('buy-text');
+        
+        let targetBR = null; // Брейнрот, рядом с которым мы стоим
+        let isHolding = false;
+        let holdStartTime = 0;
 
+        function cancelBuy() {
+            isHolding = false;
+            buyProgress.style.width = '0%';
+            if (targetBR) {
+                buyText.innerText = money >= targetBR.price ? `BUY: ${targetBR.price}$` : 'Not enough $';
+            }
+        }
+
+        function startBuy(e) {
+            e.preventDefault();
+            if (targetBR && money >= targetBR.price) {
+                isHolding = true;
+                holdStartTime = Date.now();
+                buyText.innerText = 'BUYING...';
+            }
+        }
+
+        // Слушатели для зажатия кнопки
+        buyBtn.addEventListener('mousedown', startBuy);
+        buyBtn.addEventListener('touchstart', startBuy, {passive: false});
+        
+        window.addEventListener('mouseup', cancelBuy);
+        window.addEventListener('touchend', cancelBuy);
+
+        // --- ИГРОВОЙ ЦИКЛ ---
         function animate() {
             requestAnimationFrame(animate);
-
             conveyorTex.offset.y -= 0.02;
 
-            const conveyorSpeed = 0.15; 
+            // Движение конвейера
             for (let i = activeBrainrots.length - 1; i >= 0; i--) {
                 const br = activeBrainrots[i];
-                br.position.z += conveyorSpeed; 
-                if (br.position.z > mapSize/2) {
-                    scene.remove(br);
-                    activeBrainrots.splice(i, 1);
+                br.position.z += 0.15; 
+                if (br.position.z > mapSize/2) { scene.remove(br); activeBrainrots.splice(i, 1); }
+            }
+
+            // Поиск ближайшего брейнрота
+            let closestDist = 4; // Радиус взаимодействия
+            let closestBR = null;
+            activeBrainrots.forEach(br => {
+                let dist = player.position.distanceTo(br.position);
+                if (dist < closestDist) { closestDist = dist; closestBR = br; }
+            });
+
+            // Отображение кнопки покупки
+            if (closestBR) {
+                targetBR = closestBR;
+                
+                // Превращаем 3D координаты в 2D координаты экрана
+                const screenPos = closestBR.position.clone();
+                screenPos.y += 1.5; // Кнопка висит на уровне груди
+                screenPos.project(camera);
+
+                const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
+
+                // Показываем кнопку только если объект перед камерой (z < 1)
+                if (screenPos.z < 1) {
+                    buyBtn.style.display = 'block';
+                    buyBtn.style.left = `${x}px`;
+                    buyBtn.style.top = `${y}px`;
+
+                    if (!isHolding) {
+                        buyText.innerText = money >= targetBR.price ? `BUY: ${targetBR.price}$` : 'Not enough $';
+                        buyText.style.color = money >= targetBR.price ? 'white' : 'red';
+                    }
+                } else {
+                    buyBtn.style.display = 'none'; cancelBuy();
+                }
+            } else {
+                targetBR = null; buyBtn.style.display = 'none'; cancelBuy();
+            }
+
+            // Логика полоски прогресса
+            if (isHolding && targetBR) {
+                let elapsed = Date.now() - holdStartTime;
+                let percent = Math.min((elapsed / 2000) * 100, 100);
+                buyProgress.style.width = `${percent}%`;
+
+                if (elapsed >= 2000) { // Прошло 2 секунды
+                    // ПОКУПКА СОВЕРШЕНА
+                    money -= targetBR.price;
+                    incomePerSec += targetBR.income;
+                    updateBalance();
+
+                    // Удаляем с конвейера
+                    scene.remove(targetBR);
+                    activeBrainrots.splice(activeBrainrots.indexOf(targetBR), 1);
+                    
+                    targetBR = null; buyBtn.style.display = 'none'; cancelBuy();
                 }
             }
 
+            // Физика игрока
             if (moveVector.x !== 0 || moveVector.z !== 0) {
-                const cameraAngle = Math.atan2(camera.position.x - player.position.x, camera.position.z - player.position.z);
-                player.position.x += (moveVector.x * Math.cos(cameraAngle) + moveVector.z * Math.sin(cameraAngle)) * speed;
-                player.position.z += (-moveVector.x * Math.sin(cameraAngle) + moveVector.z * Math.cos(cameraAngle)) * speed;
+                const angle = Math.atan2(camera.position.x - player.position.x, camera.position.z - player.position.z);
+                player.position.x += (moveVector.x * Math.cos(angle) + moveVector.z * Math.sin(angle)) * 0.25;
+                player.position.z += (-moveVector.x * Math.sin(angle) + moveVector.z * Math.cos(angle)) * 0.25;
             }
+            velocityY -= 0.02; player.position.y += velocityY;
+            let gLevel = Math.abs(player.position.x) < 4.6 ? 1.7 : 1.2; 
+            if (player.position.y <= gLevel) { player.position.y = gLevel; velocityY = 0; isGrounded = true; }
 
-            velocityY += -0.02; player.position.y += velocityY;
-            let groundLevel = Math.abs(player.position.x) < 4.6 ? 1.7 : 1.2; 
-            if (player.position.y <= groundLevel) { player.position.y = groundLevel; velocityY = 0; isGrounded = true; }
-
-            if (player.position.x > boundary) player.position.x = boundary;
-            if (player.position.x < -boundary) player.position.x = -boundary;
-            if (player.position.z > boundary) player.position.z = boundary;
-            if (player.position.z < -boundary) player.position.z = -boundary;
-
+            // Следование камеры
             camera.position.x += player.position.x - prevPlayerPos.x;
             camera.position.y += player.position.y - prevPlayerPos.y;
             camera.position.z += player.position.z - prevPlayerPos.z;
-            controls.target.copy(player.position);
-            controls.update();
-            prevPlayerPos.copy(player.position);
+            controls.target.copy(player.position); controls.update(); prevPlayerPos.copy(player.position);
 
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
 </body>
