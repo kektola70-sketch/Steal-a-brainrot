@@ -5,41 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Steal a Brainrot</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #87CEEB;
-            touch-action: none;
-        }
-        canvas {
-            display: block;
-        }
-        #joystick-zone {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 140px;
-            height: 140px;
-            z-index: 10;
-        }
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; touch-action: none; }
+        canvas { display: block; }
+        #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; z-index: 10; }
         #jump-btn {
-            position: absolute;
-            bottom: 40px;
-            right: 40px;
-            width: 80px;
-            height: 80px;
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 2px solid white;
-            border-radius: 50%;
-            font-size: 16px;
-            font-weight: bold;
-            color: black;
-            z-index: 10;
-            user-select: none;
+            position: absolute; bottom: 40px; right: 40px; width: 80px; height: 80px;
+            background-color: rgba(255, 255, 255, 0.5); border: 2px solid white; border-radius: 50%;
+            font-size: 16px; font-weight: bold; color: black; z-index: 10; user-select: none;
         }
-        #jump-btn:active {
-            background-color: rgba(255, 255, 255, 0.8);
-        }
+        #jump-btn:active { background-color: rgba(255, 255, 255, 0.8); }
     </style>
 </head>
 <body>
@@ -58,27 +32,19 @@
         scene.fog = new THREE.Fog(0x87CEEB, 20, 70); 
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true; 
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(20, 40, 20);
         dirLight.castShadow = true; 
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 100;
-        dirLight.shadow.camera.left = -50;
-        dirLight.shadow.camera.right = 50;
-        dirLight.shadow.camera.top = 50;
-        dirLight.shadow.camera.bottom = -50;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
         // --- ГЕНЕРАТОРЫ ТЕКСТУР ---
@@ -104,10 +70,7 @@
             ctx.fillStyle = '#222'; ctx.fillRect(0,0,256,256);
             ctx.fillStyle = '#aa0000';
             for(let i=-256; i<512; i+=64) {
-                ctx.beginPath();
-                ctx.moveTo(0, i); ctx.lineTo(256, i + 128);
-                ctx.lineTo(256, i + 160); ctx.lineTo(0, i + 32);
-                ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i + 128); ctx.lineTo(256, i + 160); ctx.lineTo(0, i + 32); ctx.fill();
             }
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -137,103 +100,47 @@
         conveyor.castShadow = true;
         scene.add(conveyor);
 
-        // Серые стены
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.7 });
-        const wallThickness = 2;
-        const wallHeight = 6;
-
-        function createWall(x, z, width, depth) {
-            const wall = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, depth), wallMat);
-            wall.position.set(x, wallHeight / 2, z);
-            wall.receiveShadow = true;
-            wall.castShadow = true;
-            scene.add(wall);
-        }
-
-        createWall(0, -mapSize/2, mapSize, wallThickness); 
-        createWall(0, mapSize/2, mapSize, wallThickness);  
-        createWall(-mapSize/2, 0, wallThickness, mapSize); 
-        createWall(mapSize/2, 0, wallThickness, mapSize);  
-
-        // --- НОВОЕ: БАЗЫ И СЛОТЫ ---
-        // Массив для хранения данных о базах (пригодится позже)
+        // Базы
         const gameBases = []; 
-
         function createBase(x, z, teamColor) {
-            // 1. Сама бетонная площадка базы (очень тонкая, чтобы не мешать бегать)
-            const baseWidth = 14;
-            const baseDepth = 12;
-            const baseHeight = 0.1;
-            
-            const baseGeo = new THREE.BoxGeometry(baseWidth, baseHeight, baseDepth);
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.9 }); // Серый бетон
+            const baseGeo = new THREE.BoxGeometry(14, 0.1, 12);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.9 });
             const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-            baseMesh.position.set(x, baseHeight / 2, z);
+            baseMesh.position.set(x, 0.05, z);
             baseMesh.receiveShadow = true;
             scene.add(baseMesh);
 
-            // Окантовка цветом команды (Синие слева, Красные справа)
-            const borderGeo = new THREE.BoxGeometry(baseWidth + 0.4, baseHeight - 0.05, baseDepth + 0.4);
+            const borderGeo = new THREE.BoxGeometry(14.4, 0.05, 12.4);
             const borderMat = new THREE.MeshBasicMaterial({ color: teamColor });
             const borderMesh = new THREE.Mesh(borderGeo, borderMat);
-            borderMesh.position.set(x, baseHeight / 2 - 0.02, z);
+            borderMesh.position.set(x, 0.03, z);
             scene.add(borderMesh);
 
-            // 2. Создаем 10 слотов (2 ряда по 5 штук)
             const slots = [];
-            const slotSize = 1.5;
-            const slotGeo = new THREE.PlaneGeometry(slotSize, slotSize);
-            const slotMat = new THREE.MeshBasicMaterial({ 
-                color: 0xffffff, 
-                opacity: 0.4, 
-                transparent: true 
-            });
-
-            // Математика для ровной расстановки сеткой 5x2
-            const startX = x - (baseWidth / 2) + 2.5;
-            const startZ = z - (baseDepth / 2) + 3.5;
-            const spacingX = 2.2;
-            const spacingZ = 5;
-
+            const slotMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true });
+            const startX = x - 7 + 2.5;
+            const startZ = z - 6 + 3.5;
+            
             for (let row = 0; row < 2; row++) {
                 for (let col = 0; col < 5; col++) {
-                    const slot = new THREE.Mesh(slotGeo, slotMat);
-                    slot.rotation.x = -Math.PI / 2; // Кладем плашмя
-                    // Поднимаем чуть-чуть выше базы, чтобы текстуры не мерцали
-                    slot.position.set(startX + col * spacingX, baseHeight + 0.02, startZ + row * spacingZ);
+                    const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), slotMat);
+                    slot.rotation.x = -Math.PI / 2; 
+                    slot.position.set(startX + col * 2.2, 0.12, startZ + row * 5);
                     scene.add(slot);
-                    
-                    // Сохраняем координаты слота для будущих "brainrot"
-                    slots.push({
-                        x: slot.position.x,
-                        y: slot.position.y,
-                        z: slot.position.z,
-                        isOccupied: false
-                    });
+                    slots.push({ x: slot.position.x, y: slot.position.y, z: slot.position.z, isOccupied: false });
                 }
             }
-
-            // Записываем базу в память игры
             gameBases.push({ x, z, teamColor, slots });
         }
 
-        // Расставляем 4 базы СЛЕВА (Синяя команда)
-        createBase(-22, -30, 0x0055ff);
-        createBase(-22, -10, 0x0055ff);
-        createBase(-22, 10, 0x0055ff);
-        createBase(-22, 30, 0x0055ff);
+        // Базы (4 Синих слева, 4 Красных справа)
+        createBase(-22, -30, 0x0055ff); createBase(-22, -10, 0x0055ff);
+        createBase(-22, 10, 0x0055ff);  createBase(-22, 30, 0x0055ff);
+        createBase(22, -30, 0xff2200);  createBase(22, -10, 0xff2200);
+        createBase(22, 10, 0xff2200);   createBase(22, 30, 0xff2200);
 
-        // Расставляем 4 базы СПРАВА (Красная команда)
-        createBase(22, -30, 0xff2200);
-        createBase(22, -10, 0xff2200);
-        createBase(22, 10, 0xff2200);
-        createBase(22, 30, 0xff2200);
-
-
-        // --- 3. ИГРОК И КАМЕРА ---
-        const playerGeo = new THREE.BoxGeometry(1.2, 2.4, 1.2);
-        const playerMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.3 });
-        const player = new THREE.Mesh(playerGeo, playerMat);
+        // --- 3. ИГРОК ---
+        const player = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 1.2), new THREE.MeshStandardMaterial({ color: 0xffcc00 }));
         player.position.set(10, 1.2, 20);
         player.castShadow = true; 
         scene.add(player);
@@ -242,96 +149,210 @@
         camera.position.set(10, 6, 28); 
         controls.enablePan = false;
         controls.maxPolarAngle = Math.PI / 2 - 0.1; 
-        controls.minDistance = 4; 
-        controls.maxDistance = 15;
 
         let prevPlayerPos = player.position.clone();
 
+        // --- НОВОЕ: СИСТЕМА BRAINROTS ---
+        const activeBrainrots = [];
+        
+        // Функция для создания "Летающего Текста" (Спрайт)
+        function createTextLabel(name, rarityText) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // Настройка текста
+            ctx.textAlign = 'center';
+            // Имя (Белое)
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 40px Arial';
+            ctx.fillText(name, 256, 50);
+            
+            // Редкость (Серая, так как все Common)
+            ctx.fillStyle = '#cccccc';
+            ctx.font = 'bold 30px Arial';
+            ctx.fillText(`[ ${rarityText} ]`, 256, 90);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(4, 1, 1); // Размер текста в 3D мире
+            return sprite;
+        }
+
+        // Фабрика по созданию самих моделей
+        function buildBrainrotModel(type) {
+            const group = new THREE.Group();
+            
+            // Стандартные материалы
+            const matYellow = new THREE.MeshStandardMaterial({color: 0xffff00});
+            const matGreen = new THREE.MeshStandardMaterial({color: 0x00aa00});
+            const matBlue = new THREE.MeshStandardMaterial({color: 0x0000ff});
+            const matWhite = new THREE.MeshStandardMaterial({color: 0xffffff});
+            const matBlack = new THREE.MeshStandardMaterial({color: 0x222222});
+            const matRed = new THREE.MeshStandardMaterial({color: 0xff0000});
+            const matSkin = new THREE.MeshStandardMaterial({color: 0xffccaa});
+            const matPurple = new THREE.MeshStandardMaterial({color: 0x800080});
+            const matCyan = new THREE.MeshStandardMaterial({color: 0x00ffff});
+            const matOrange = new THREE.MeshStandardMaterial({color: 0xffa500});
+
+            if (type === 'noobini') {
+                // Noobini pizanini (Роблокс Нуб + Пицца)
+                const legs = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), matBlue);
+                legs.position.y = 0.4;
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), matGreen);
+                torso.position.y = 1.2;
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), matYellow);
+                head.position.y = 1.9;
+                const pizza = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.1, 16), matOrange);
+                pizza.position.y = 2.25;
+                group.add(legs, torso, head, pizza);
+                group.nameText = 'Noobini pizanini';
+            } 
+            else if (type === 'skibidi') {
+                // Skibidi Toilet
+                const base = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 1.2), matWhite);
+                base.position.y = 0.3;
+                const tank = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.4), matWhite);
+                tank.position.set(0, 0.9, -0.4);
+                const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.5, 16), matWhite);
+                bowl.position.set(0, 0.85, 0.2);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), matSkin);
+                head.position.set(0, 1.2, 0.2);
+                group.add(base, tank, bowl, head);
+                group.nameText = 'Skibidi Toilet';
+            }
+            else if (type === 'grimace') {
+                // Grimace Shake
+                const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, 1.2, 16), matPurple);
+                cup.position.y = 0.6;
+                const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6), matWhite);
+                straw.position.set(0.2, 1.4, 0);
+                straw.rotation.z = -0.3;
+                group.add(cup, straw);
+                group.nameText = 'Grimace Shake';
+            }
+            else if (type === 'maxwell') {
+                // Maxwell Cat (Буханка)
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 1.2), matBlack);
+                body.position.y = 0.3;
+                const face = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.4), matWhite);
+                face.position.set(0, 0.4, 0.61); // Лицо спереди
+                const ear1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.1), matBlack);
+                ear1.position.set(-0.3, 0.7, 0.5);
+                const ear2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.1), matBlack);
+                ear2.position.set(0.3, 0.7, 0.5);
+                group.add(body, face, ear1, ear2);
+                group.nameText = 'Maxwell Cat';
+            }
+            else if (type === 'imposter') {
+                // Sus Imposter
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16), matRed);
+                body.position.y = 0.6;
+                const visor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.2), matCyan);
+                visor.position.set(0, 0.8, 0.4);
+                const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), matRed);
+                backpack.position.set(0, 0.6, -0.4);
+                group.add(body, visor, backpack);
+                group.nameText = 'Sus Imposter';
+            }
+
+            // Включаем тени для всех частей
+            group.traverse(child => { if(child.isMesh) child.castShadow = true; });
+
+            // Добавляем текст над моделью
+            const label = createTextLabel(group.nameText, "Common");
+            label.position.set(0, 2.8, 0); // Высота текста над объектом
+            group.add(label);
+
+            return group;
+        }
+
+        function spawnBrainrot() {
+            const types = ['noobini', 'skibidi', 'grimace', 'maxwell', 'imposter'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            
+            const brainrot = buildBrainrotModel(randomType);
+            
+            // Ставим его в самое начало конвейера (Север)
+            // По X: случайный сдвиг влево-вправо, чтобы они не ехали ровно гуськом
+            const randomX = (Math.random() - 0.5) * 4; 
+            brainrot.position.set(randomX, 0.5, -mapSize/2); 
+            
+            scene.add(brainrot);
+            activeBrainrots.push(brainrot);
+        }
+
+        // Спавним новый брейнрот каждые 3 секунды
+        setInterval(spawnBrainrot, 3000);
+
         // --- 4. УПРАВЛЕНИЕ ---
         let moveVector = { x: 0, z: 0 };
-        const speed = 0.25; 
-
         const joystickManager = nipplejs.create({
             zone: document.getElementById('joystick-zone'),
-            mode: 'static',
-            position: { left: '70px', bottom: '70px' },
-            color: 'white'
+            mode: 'static', position: { left: '70px', bottom: '70px' }, color: 'white'
         });
-
         joystickManager.on('move', (evt, data) => {
-            const angle = data.angle.radian;
             const force = Math.min(data.force, 1);
-            moveVector.x = Math.cos(angle) * force;
-            moveVector.z = -Math.sin(angle) * force;
+            moveVector.x = Math.cos(data.angle.radian) * force;
+            moveVector.z = -Math.sin(data.angle.radian) * force;
         });
-
         joystickManager.on('end', () => { moveVector = { x: 0, z: 0 }; });
 
-        let velocityY = 0;
-        let isGrounded = true;
-        const gravity = -0.02;
-        const jumpStrength = 0.4;
-
+        let velocityY = 0; let isGrounded = true;
         const jumpAction = (e) => {
             e.preventDefault();
-            if (isGrounded) {
-                velocityY = jumpStrength;
-                isGrounded = false;
-            }
+            if (isGrounded) { velocityY = 0.4; isGrounded = false; }
         };
         const jumpBtn = document.getElementById('jump-btn');
         jumpBtn.addEventListener('touchstart', jumpAction, {passive: false});
         jumpBtn.addEventListener('mousedown', jumpAction);
 
         // --- 5. ИГРОВОЙ ЦИКЛ ---
-        const boundary = mapSize / 2 - wallThickness;
+        const speed = 0.25; 
+        const boundary = mapSize / 2 - 2;
 
         function animate() {
             requestAnimationFrame(animate);
 
+            // Анимация конвейера
             conveyorTex.offset.y -= 0.02;
 
+            // ДВИЖЕНИЕ БРЕЙНРОТОВ по конвейеру
+            const conveyorSpeed = 0.15; // Скорость движения предметов
+            for (let i = activeBrainrots.length - 1; i >= 0; i--) {
+                const br = activeBrainrots[i];
+                br.position.z += conveyorSpeed; // Двигаем на юг
+
+                // Если доехал до конца карты - удаляем, чтобы не лагало
+                if (br.position.z > mapSize/2) {
+                    scene.remove(br);
+                    activeBrainrots.splice(i, 1);
+                }
+            }
+
+            // Движение игрока
             if (moveVector.x !== 0 || moveVector.z !== 0) {
-                const cameraAngle = Math.atan2(
-                    camera.position.x - player.position.x,
-                    camera.position.z - player.position.z
-                );
-
-                const moveX = moveVector.x * Math.cos(cameraAngle) + moveVector.z * Math.sin(cameraAngle);
-                const moveZ = -moveVector.x * Math.sin(cameraAngle) + moveVector.z * Math.cos(cameraAngle);
-
-                player.position.x += moveX * speed;
-                player.position.z += moveZ * speed;
+                const cameraAngle = Math.atan2(camera.position.x - player.position.x, camera.position.z - player.position.z);
+                player.position.x += (moveVector.x * Math.cos(cameraAngle) + moveVector.z * Math.sin(cameraAngle)) * speed;
+                player.position.z += (-moveVector.x * Math.sin(cameraAngle) + moveVector.z * Math.cos(cameraAngle)) * speed;
             }
 
-            velocityY += gravity;
-            player.position.y += velocityY;
+            // Гравитация игрока
+            velocityY += -0.02; player.position.y += velocityY;
+            let groundLevel = Math.abs(player.position.x) < 4.6 ? 1.7 : 1.2; 
+            if (player.position.y <= groundLevel) { player.position.y = groundLevel; velocityY = 0; isGrounded = true; }
 
-            let groundLevel = 1.2; 
-            
-            if (Math.abs(player.position.x) < conveyorWidth / 2 + 0.6) {
-                groundLevel = 1.2 + 0.5; 
-            }
-
-            if (player.position.y <= groundLevel) {
-                player.position.y = groundLevel;
-                velocityY = 0;
-                isGrounded = true;
-            }
-
+            // Ограничения карты
             if (player.position.x > boundary) player.position.x = boundary;
             if (player.position.x < -boundary) player.position.x = -boundary;
             if (player.position.z > boundary) player.position.z = boundary;
             if (player.position.z < -boundary) player.position.z = -boundary;
 
-            const deltaX = player.position.x - prevPlayerPos.x;
-            const deltaY = player.position.y - prevPlayerPos.y;
-            const deltaZ = player.position.z - prevPlayerPos.z;
-
-            camera.position.x += deltaX;
-            camera.position.y += deltaY;
-            camera.position.z += deltaZ;
-
+            // Следование камеры
+            camera.position.x += player.position.x - prevPlayerPos.x;
+            camera.position.y += player.position.y - prevPlayerPos.y;
+            camera.position.z += player.position.z - prevPlayerPos.z;
             controls.target.copy(player.position);
             controls.update();
             prevPlayerPos.copy(player.position);
