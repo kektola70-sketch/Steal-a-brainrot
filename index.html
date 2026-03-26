@@ -32,10 +32,14 @@
         .buy-item-btn { background: #00ff00; color: black; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; border-radius: 5px; margin-top: 5px;}
         
         #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; z-index: 10; pointer-events: auto; }
-        .action-btn { position: absolute; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.5); border: 2px solid white; border-radius: 50%; font-size: 12px; font-weight: bold; color: black; z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; }
+        .action-btn { position: absolute; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.5); border: 2px solid white; border-radius: 50%; font-size: 12px; font-weight: bold; color: black; z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; cursor: pointer;}
+        
         #jump-btn { bottom: 30px; right: 20px; width: 70px; height: 70px; font-size: 14px;}
         #hit-btn { bottom: 110px; right: 20px; background: rgba(255, 0, 0, 0.5); color: white;}
         #trap-btn { bottom: 30px; right: 100px; }
+        
+        /* КНОПКА ПРОДАЖИ (ПОЯВЛЯЕТСЯ ТОЛЬКО КОГДА НЕСЕШЬ) */
+        #sell-btn { display: none; bottom: 190px; right: 20px; background: rgba(255, 255, 0, 0.8); border-color: yellow; color: black; font-size: 14px; }
 
         #carry-status { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(255,0,0,0.8); color: white; padding: 10px; border-radius: 8px; font-weight: bold; display: none; border: 2px solid white; z-index: 10; text-align: center; }
         #action-ui { position: absolute; display: none; width: 140px; height: 50px; background: rgba(0, 0, 0, 0.8); border: 2px solid white; border-radius: 10px; color: white; font-weight: bold; font-size: 16px; text-align: center; line-height: 50px; transform: translate(-50%, -50%); z-index: 20; overflow: hidden; pointer-events: auto; }
@@ -93,6 +97,8 @@
         <div id="trap-btn" class="action-btn">TRAP</div>
         <div id="hit-btn" class="action-btn">HIT</div>
         <div id="jump-btn" class="action-btn">JUMP</div>
+        <!-- НОВАЯ КНОПКА ПРОДАЖИ -->
+        <div id="sell-btn" class="action-btn">SELL</div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -120,11 +126,10 @@
 
         let myPlayerId = null; let nickname = "Guest";
 
-        // ГЕНЕРАТОР ЗВУКА ГОЛОСА (Text-to-Speech)
         function speakName(name) {
             if(!window.speechSynthesis) return;
             const msg = new SpeechSynthesisUtterance(name);
-            msg.lang = 'en-US'; msg.volume = 1; msg.rate = 1.1; msg.pitch = 1.4; // Писклявый смешной голос
+            msg.lang = 'en-US'; msg.volume = 1; msg.rate = 1.1; msg.pitch = 1.4; 
             window.speechSynthesis.speak(msg);
         }
 
@@ -161,8 +166,6 @@
 
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('game-ui').style.display = 'block';
-                
-                // Активация аудио движка после клика (чтобы браузер не блокировал звук)
                 speakName("Welcome to Brainrot Factory");
                 startGame();
             } catch (err) { document.getElementById('auth-status').innerText = err.message; }
@@ -180,7 +183,7 @@
             chatMsgs.appendChild(div); chatMsgs.scrollTop = chatMsgs.scrollHeight;
         });
 
-        // --- ИВЕНТЫ И РАДУЖНАЯ МАШИНА ---
+        // ИВЕНТЫ И МАШИНА
         let currEvent = 'none'; let evEnds = 0; let nxtEv = 0; let spawnsLeft = 0;
         let machineGoldCount = 0;
 
@@ -206,11 +209,23 @@
 
         async function startGame() {
             let money = 0; let incomePerSec = 0; let weapon = 'normal_glove'; let trapsCount = 0;
-            let isFrozen = false; let carriedBrainrot = null; let myBaseSlots = [];
+            let isFrozen = false; let carriedBrainrot = null;
             
+            const gBases = []; let myBIdx = Math.floor(Math.random() * 8);
+
+            // ЗАГРУЗКА И СОХРАНЕНИЕ
             const snap = await get(ref(db, 'players/' + myPlayerId));
-            if(snap.exists() && snap.val().money) { money = snap.val().money; myBaseSlots = snap.val().baseSlots || []; }
-            function savePlayerData() { update(ref(db, 'players/' + myPlayerId), { money: money, baseSlots: myBaseSlots }); }
+            if(snap.exists() && snap.val().money) { money = snap.val().money; }
+            
+            function savePlayerData() { 
+                // Собираем точные данные со слотов базы
+                let slotsData = [];
+                gBases[myBIdx].slots.forEach(sl => {
+                    if(sl.occ && sl.m) slotsData.push({ t: sl.m.td.t, e: sl.m.td.e });
+                    else slotsData.push(null);
+                });
+                update(ref(db, 'players/' + myPlayerId), { money: money, baseSlots: slotsData }); 
+            }
 
             function updateUI() { document.getElementById('money-txt').innerText = money + '$'; document.getElementById('income-txt').innerText = '+' + incomePerSec + '$/sec'; document.getElementById('inv-traps').innerText = trapsCount; }
             setInterval(() => { if(!isFrozen) { money += incomePerSec; updateUI(); savePlayerData(); } }, 1000);
@@ -233,7 +248,6 @@
             const vdMat = new THREE.MeshBasicMaterial({color: 0x000000}); const vdGeo = new THREE.PlaneGeometry(convW, wH);
             const vN = new THREE.Mesh(vdGeo, vdMat); vN.position.set(0, wH/2, -mapS/2+0.1); scene.add(vN); const vS = new THREE.Mesh(vdGeo, vdMat); vS.position.set(0, wH/2, mapS/2-0.1); vS.rotation.y = Math.PI; scene.add(vS);
 
-            // ТАЙМЕР ИВЕНТОВ
             const scrCv = document.createElement('canvas'); scrCv.width=512; scrCv.height=256; const scrCtx = scrCv.getContext('2d');
             const scrTex = new THREE.CanvasTexture(scrCv); const scrM = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.5), new THREE.MeshBasicMaterial({map: scrTex}));
             scrM.position.set(0, 8, -mapS/2+1); scene.add(scrM);
@@ -257,15 +271,13 @@
             machineMesh.position.set(-12, 3, 0); scene.add(machineMesh);
             const mScreen = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.5), new THREE.MeshBasicMaterial({map: rMTex}));
             mScreen.position.set(-9.9, 4.5, 0); mScreen.rotation.y = Math.PI/2; scene.add(mScreen);
-            
-            // Зона приемки машины
             const machinePad = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 4), new THREE.MeshStandardMaterial({color: 0x00ff00}));
             machinePad.position.set(-8, 0.1, 0); scene.add(machinePad);
 
             setInterval(() => {
                 rMCtx.fillStyle = '#000'; rMCtx.fillRect(0,0,512,256); rMCtx.textAlign = 'center';
                 rMCtx.fillStyle = '#ff00ff'; rMCtx.font = 'bold 45px Arial'; rMCtx.fillText("RAINBOW MACHINE", 256, 80);
-                rMCtx.fillStyle = '#ffd700'; rMCtx.font = 'bold 60px Arial'; rMCtx.fillText(`${machineGoldCount} / 10 GOLD`, 256, 180);
+                rMCtx.fillStyle = '#ffd700'; rMCtx.font = 'bold 60px Arial'; rMCtx.fillText(`${machineGoldCount} / 10`, 256, 180);
                 rMTex.needsUpdate = true;
             }, 500);
 
@@ -303,16 +315,12 @@
                 const can=document.createElement('canvas'); can.width=512; can.height=160; const cx=can.getContext('2d'); cx.textAlign='center'; 
                 cx.fillStyle='white'; cx.font='bold 40px Arial'; cx.fillText(t, 256, 40); 
                 let eCol = 'white'; let eTxt = '';
-                if(ench==='gold'){eCol='#ffd700'; eTxt='[ GOLD ] x1.5';}
-                if(ench==='diamond'){eCol='#00ffff'; eTxt='[ DIAMOND ] x5';}
-                if(ench==='rainbow'){eCol='#ff00ff'; eTxt='[ RAINBOW ] x15';}
+                if(ench==='gold'){eCol='#ffd700'; eTxt='[ GOLD ] x1.5';} if(ench==='diamond'){eCol='#00ffff'; eTxt='[ DIAMOND ] x5';} if(ench==='rainbow'){eCol='#ff00ff'; eTxt='[ RAINBOW ] x15';}
                 if(eTxt) { cx.fillStyle=eCol; cx.font='bold 25px Arial'; cx.fillText(eTxt, 256, 75); }
-                cx.fillStyle='yellow'; cx.font='bold 30px Arial'; cx.fillText(`Price: ${p}$`, 256, 110);
-                cx.fillStyle='#00ff00'; cx.font='bold 30px Arial'; cx.fillText(`${inc}$ / sec`, 256, 145);
+                cx.fillStyle='yellow'; cx.font='bold 30px Arial'; cx.fillText(`Price: ${p}$`, 256, 110); cx.fillStyle='#00ff00'; cx.font='bold 30px Arial'; cx.fillText(`${inc}$ / sec`, 256, 145);
                 const sp=new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(can), transparent: true})); sp.scale.set(5, 1.5, 1); return sp; 
             }
 
-            const gBases = []; let myBIdx = Math.floor(Math.random() * 8);
             function mkBase(idx, x, z, col, isL) {
                 const b = { x, z, slots: [], owner: idx===myBIdx?'player':'bot', aBR: [], isL: isL, movingBRs: [] };
                 const fl=new THREE.Mesh(new THREE.BoxGeometry(14,0.1,12), new THREE.MeshStandardMaterial({color:0xaaaaaa})); fl.position.set(x,0.05,z); scene.add(fl);
@@ -320,10 +328,8 @@
                 const bW=new THREE.Mesh(new THREE.BoxGeometry(0.5,5,12),wM); bW.position.set(x-(6.75*d),2.5,z); scene.add(bW);
                 const s1=new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s1.position.set(x,2.5,z-5.75); scene.add(s1); const s2=new THREE.Mesh(new THREE.BoxGeometry(14,5,0.5),wM); s2.position.set(x,2.5,z+5.75); scene.add(s2);
                 const rf=new THREE.Mesh(new THREE.BoxGeometry(14.5,0.5,12.5), new THREE.MeshStandardMaterial({color:col})); rf.position.set(x,5.25,z); scene.add(rf);
-                
-                const cN=document.createElement('canvas'); cN.width=512; cN.height=128; const cX=cN.getContext('2d'); cX.textAlign='center'; cX.fillStyle=b.owner==='player'?"#00ff00":"#ff4444"; cX.font='bold 40px Arial'; cX.fillText(b.owner==='player'?"MY BASE":"BASE",256,70); const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cN), transparent:true})); sign.position.set(x,7,z); sign.scale.set(6,1.5,1); scene.add(sign);
+                const sign = createTextSprite(b.owner==='player'?"MY BASE":"BASE", b.owner==='player'?"#00ff00":"#ff4444", 7); sign.position.x=x; sign.position.z=z; scene.add(sign);
 
-                // Зона приемки
                 const padX = x + (7 * d);
                 const gZone = new THREE.Mesh(new THREE.BoxGeometry(2, 0.15, 2), new THREE.MeshStandardMaterial({color: 0x00ff00}));
                 gZone.position.set(padX, 0.1, z); scene.add(gZone); b.padX = padX; b.padZ = z;
@@ -334,6 +340,8 @@
                 b.lsr=new THREE.Mesh(new THREE.BoxGeometry(0.2,5,11),new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.5})); b.lsr.position.set(x+(6.8*d),2.5,z); b.lsr.visible=false; scene.add(b.lsr);
                 gBases.push(b);
             }
+            function createTextSprite(t, c, yO) { const can = document.createElement('canvas'); can.width=512; can.height=128; const ctx=can.getContext('2d'); ctx.textAlign='center'; ctx.fillStyle=c; ctx.font='bold 40px Arial'; ctx.fillText(t, 256, 70); const sp=new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(can), transparent: true})); sp.position.y=yO; sp.scale.set(6, 1.5, 1); return sp; }
+
             mkBase(0,-30,-30,0x0055ff,true); mkBase(1,-30,-10,0x0055ff,true); mkBase(2,-30,10,0x0055ff,true); mkBase(3,-30,30,0x0055ff,true);
             mkBase(4,30,-30,0xff2200,false); mkBase(5,30,-10,0xff2200,false); mkBase(6,30,10,0xff2200,false); mkBase(7,30,30,0xff2200,false);
 
@@ -357,20 +365,17 @@
             setInterval(()=>{ 
                 let e = 'normal';
                 if(currEvent !== 'none' && spawnsLeft > 0) { e = currEvent; update(ref(db, 'serverState'), {spawnsLeft: spawnsLeft - 1}); }
-                else {
-                    let er = Math.random() * 100;
-                    if(er < 0.5) e = 'rainbow'; else if(er < 2) e = 'diamond'; else if(er < 10) e = 'gold';
-                }
+                else { let er = Math.random() * 100; if(er < 0.5) e = 'rainbow'; else if(er < 2) e = 'diamond'; else if(er < 10) e = 'gold'; }
 
                 let r = Math.random() * 100; let t = '';
                 if(r < 20) t = Math.random()>0.5 ? 'ambalabu' : '67'; else if(r < 50) t = Math.random()>0.5 ? 'jandelini' : 'corni'; else t = Math.random()>0.5 ? 'noobini' : 'pipikiwi'; 
 
                 const b = buildBR(t, e); b.position.set((Math.random()-0.5)*4, 0.5, -mapS/2 - 2); scene.add(b); convBR.push({m:b, s:'conveyor', animOffset: Math.random()*10});
-                speakName(b.td.n); // Голосовая озвучка
+                speakName(b.td.n);
             }, 3000);
 
-            if(myBaseSlots.length > 0) {
-                myBaseSlots.forEach((sData, i) => {
+            if(snap.exists() && snap.val().baseSlots) {
+                snap.val().baseSlots.forEach((sData, i) => {
                     if(sData && sData.t) {
                         const b = buildBR(sData.t, sData.e); let sl = gBases[myBIdx].slots[i];
                         b.position.set(sl.x, sl.y, sl.z); sl.occ = true; sl.m = b;
@@ -382,19 +387,21 @@
             function placeOnBase(br, base) { 
                 let idx = base.slots.findIndex(s=>!s.occ); 
                 if(idx !== -1){ 
-                    let sl = base.slots[idx]; 
-                    sl.occ=true; sl.m=br; base.aBR.push(br); 
-                    
-                    // Ставим на Зеленый коврик и запускаем анимацию
-                    br.position.set(base.padX, 0.25, base.padZ);
-                    base.movingBRs.push({ m: br, tx: sl.x, tz: sl.z });
-
-                    if(base.owner==='player'){
-                        incomePerSec+=br.td.i; updateUI();
-                        myBaseSlots[idx] = { t: br.td.t, e: br.td.e }; savePlayerData();
-                    }
+                    let sl = base.slots[idx]; sl.occ=true; sl.m=br; base.aBR.push(br); 
+                    br.position.set(base.padX, 0.25, base.padZ); base.movingBRs.push({ m: br, tx: sl.x, tz: sl.z });
+                    if(base.owner==='player'){ incomePerSec+=br.td.i; updateUI(); savePlayerData(); }
                 } 
             }
+
+            // КНОПКА РУЧНОЙ ПРОДАЖИ (Когда несешь)
+            document.getElementById('sell-btn').ontouchstart = document.getElementById('sell-btn').onmousedown = (e) => {
+                e.preventDefault();
+                if(carriedBrainrot && !isFrozen) {
+                    money += carriedBrainrot.td.p; updateUI();
+                    scene.remove(carriedBrainrot); carriedBrainrot = null;
+                    savePlayerData();
+                }
+            };
 
             let mV={x:0,z:0}; nipplejs.create({zone:document.getElementById('joystick-zone'),mode:'static',position:{left:'70px',bottom:'70px'},color:'white'}).on('move',(e,d)=>{mV.x=Math.cos(d.angle.radian)*Math.min(d.force,1); mV.z=-Math.sin(d.angle.radian)*Math.min(d.force,1);}).on('end',()=>{mV={x:0,z:0};});
             let vY=0; let isGnd=true; document.getElementById('jump-btn').ontouchstart=(e)=>{e.preventDefault(); if(isGnd&&!isFrozen){vY=0.4; isGnd=false;}};
@@ -403,7 +410,7 @@
 
             const aUI=document.getElementById('action-ui'); const aPr=document.getElementById('action-progress'); const aTx=document.getElementById('action-text');
             let tObj=null; let aType=''; let hStart=0; let isH=false; function endAct(){isH=false; aPr.style.width='0%';}
-            aUI.ontouchstart=aUI.onmousedown=(e)=>{e.preventDefault(); if(tObj&&!isFrozen){isH=true; hStart=Date.now(); aTx.innerText='WAIT...';}}; window.ontouchend=window.onmouseup=endAct;
+            aUI.ontouchstart=aUI.onmousedown=(e)=>{e.preventDefault(); if(tObj&&!isFrozen&&aType!=='full'){isH=true; hStart=Date.now(); aTx.innerText='WAIT...';}}; window.ontouchend=window.onmouseup=endAct;
 
             let syncTimer = 0; 
             function animate() {
@@ -412,8 +419,8 @@
                 let time = Date.now();
 
                 rainbowMats.forEach(m => m.color.setHSL((time*0.001)%1, 1, 0.5));
-
                 convTex.offset.y -= 0.008;
+
                 for(let i=convBR.length-1; i>=0; i--){ 
                     const b=convBR[i]; 
                     if(b.s==='conveyor'){ 
@@ -427,54 +434,83 @@
                     } 
                 }
 
-                let cl=null; let dst=4; let typ='';
-                if(!carriedBrainrot){
-                    convBR.forEach(b=>{let d=player.position.distanceTo(b.m.position); if(d<dst){dst=d;cl=b;typ='buy';}});
-                    gBases.forEach(b=>{b.aBR.forEach(bm=>{let d=player.position.distanceTo(bm.position); if(d<dst){dst=d;cl={m:bm,b:b};typ=b.owner==='player'?'sell':'steal';}});});
+                // Видимость кнопки SELL и статуса "НЕСУ"
+                if(carriedBrainrot) {
+                    document.getElementById('carry-status').style.display='block';
+                    document.getElementById('sell-btn').style.display='flex';
+                } else {
+                    document.getElementById('carry-status').style.display='none';
+                    document.getElementById('sell-btn').style.display='none';
                 }
-                if(cl){ tObj=cl; aType=typ; const p=cl.m.position.clone(); p.y+=2; p.project(camera); if(p.z<1){ aUI.style.display='block'; aUI.style.left=`${(p.x*0.5+0.5)*innerWidth}px`; aUI.style.top=`${(p.y*-0.5+0.5)*innerHeight}px`; if(!isH){ if(typ==='buy'){aTx.innerText=money>=cl.m.td.p?`BUY ${cl.m.td.p}$`:'NO $'; aTx.style.color=money>=cl.m.td.p?'white':'red';} if(typ==='sell'){aTx.innerText=`SELL +${cl.m.td.p}$`; aTx.style.color='yellow';} if(typ==='steal'){aTx.innerText=`STEAL`; aTx.style.color='red';} } } else {aUI.style.display='none'; endAct();} } else {tObj=null; aUI.style.display='none'; endAct();}
 
-                if(isH && tObj){ 
+                let cl=null; let dst=4; let typ='';
+                let hasEmptySlot = gBases[myBIdx].slots.some(s=>!s.occ);
+
+                if(!carriedBrainrot){
+                    // Руки пусты
+                    convBR.forEach(b=>{let d=player.position.distanceTo(b.m.position); if(d<dst){dst=d;cl=b;typ=hasEmptySlot?'buy':'full';}});
+                    gBases.forEach(b=>{b.aBR.forEach(bm=>{let d=player.position.distanceTo(bm.position); if(d<dst){dst=d;cl={m:bm,b:b};typ=b.owner==='player'?'carry':'steal';}});});
+                } else {
+                    // В руках брейнрот -> ищем только свои для свапа
+                    gBases[myBIdx].aBR.forEach(bm=>{let d=player.position.distanceTo(bm.position); if(d<dst){dst=d;cl={m:bm,b:gBases[myBIdx]};typ='swap';}});
+                }
+
+                if(cl){ 
+                    tObj=cl; aType=typ; const p=cl.m.position.clone(); p.y+=2; p.project(camera); 
+                    if(p.z<1){ 
+                        aUI.style.display='block'; aUI.style.left=`${(p.x*0.5+0.5)*innerWidth}px`; aUI.style.top=`${(p.y*-0.5+0.5)*innerHeight}px`; 
+                        if(!isH){ 
+                            if(typ==='full'){aTx.innerText=`BASE FULL`; aTx.style.color='red';}
+                            else if(typ==='buy'){aTx.innerText=money>=cl.m.td.p?`BUY ${cl.m.td.p}$`:'NO $'; aTx.style.color=money>=cl.m.td.p?'white':'red';} 
+                            else if(typ==='carry'){aTx.innerText=`CARRY`; aTx.style.color='yellow';} 
+                            else if(typ==='steal'){aTx.innerText=`STEAL`; aTx.style.color='red';} 
+                            else if(typ==='swap'){aTx.innerText=`SWAP`; aTx.style.color='#00ffff';} 
+                        } 
+                    } else {aUI.style.display='none'; endAct();} 
+                } else {tObj=null; aUI.style.display='none'; endAct();}
+
+                if(isH && tObj && aType !== 'full'){ 
                     let el=Date.now()-hStart; aPr.style.width=`${Math.min((el/1000)*100,100)}%`; 
                     if(el>=1000){ 
-                        if(aType==='buy' && money>=tObj.m.td.p){ money-=tObj.m.td.p; convBR.splice(convBR.indexOf(tObj),1); placeOnBase(tObj.m, gBases[myBIdx]); } 
-                        else if(aType==='sell'){ 
-                            money+=tObj.m.td.p; incomePerSec-=tObj.m.td.i; scene.remove(tObj.m); tObj.b.aBR.splice(tObj.b.aBR.indexOf(tObj.m),1); 
-                            let sIdx=tObj.b.slots.findIndex(s=>s.m===tObj.m); if(sIdx!==-1){tObj.b.slots[sIdx].occ=false; myBaseSlots[sIdx]=null;} 
+                        if(aType==='buy' && money>=tObj.m.td.p){ 
+                            money-=tObj.m.td.p; convBR.splice(convBR.indexOf(tObj),1); placeOnBase(tObj.m, gBases[myBIdx]); 
                         } 
-                        else if(aType==='steal'){ 
+                        else if(aType==='carry' || aType==='steal'){ 
                             carriedBrainrot=tObj.m; tObj.b.aBR.splice(tObj.b.aBR.indexOf(tObj.m),1); 
-                            let sl=tObj.b.slots.find(s=>s.m===tObj.m); if(sl)sl.occ=false; document.getElementById('carry-status').style.display='block'; 
+                            let sl=tObj.b.slots.find(s=>s.m===tObj.m); if(sl){sl.occ=false; sl.m=null;} 
+                            if(aType==='carry') incomePerSec -= tObj.m.td.i; // Теряем доход пока несем
                         } 
+                        else if(aType==='swap'){
+                            let sl = tObj.b.slots.find(s=>s.m===tObj.m); let oldBR = tObj.m; let newBR = carriedBrainrot;
+                            sl.m = newBR; tObj.b.aBR[tObj.b.aBR.indexOf(oldBR)] = newBR;
+                            newBR.position.set(sl.x, sl.y, sl.z); newBR.rotation.set(0,0,0);
+                            incomePerSec = incomePerSec - oldBR.td.i + newBR.td.i;
+                            carriedBrainrot = oldBR;
+                        }
                         tObj=null; aUI.style.display='none'; endAct(); updateUI(); savePlayerData();
                     } 
                 }
 
-                // ЛОГИКА РАДУЖНОЙ МАШИНЫ
-                if(carriedBrainrot && carriedBrainrot.td.e === 'gold') {
+                // РАДУЖНАЯ МАШИНА (Сдача Брейнрота)
+                if(carriedBrainrot && ['gold','diamond','rainbow'].includes(carriedBrainrot.td.e)) {
                     if(player.position.distanceTo(machinePad.position) < 2.5) {
-                        scene.remove(carriedBrainrot); carriedBrainrot = null; document.getElementById('carry-status').style.display='none';
+                        scene.remove(carriedBrainrot); carriedBrainrot = null;
                         let nc = machineGoldCount + 1;
                         if(nc >= 10) {
                             set(ref(db, 'serverState'), { type: 'rainbow', evEnds: Date.now() + 600000, nxtEv: Date.now() + 600000 + 1800000, spawnsLeft: 5 });
                             nc = 0; speakName("Rainbow Event Initiated");
                         }
                         update(ref(db, 'rainbowMachine'), { count: nc });
+                        savePlayerData();
                     }
                 }
 
-                if(carriedBrainrot){ carriedBrainrot.position.set(player.position.x, player.position.y+3, player.position.z); let mB=gBases[myBIdx]; if(player.position.distanceTo(new THREE.Vector3(mB.x,0,mB.z))<7){ placeOnBase(carriedBrainrot,mB); carriedBrainrot=null; document.getElementById('carry-status').style.display='none'; } }
-
                 gBases.forEach(b=>{ 
-                    // Анимация заезда с Зеленой зоны на Слот
                     for(let i=b.movingBRs.length-1; i>=0; i--) {
-                        let item = b.movingBRs[i];
-                        let dx = item.tx - item.m.position.x; let dz = item.tz - item.m.position.z;
-                        if(Math.sqrt(dx*dx + dz*dz) < 0.1) {
-                            item.m.position.set(item.tx, 0.25, item.tz); b.movingBRs.splice(i, 1);
-                        } else { item.m.position.x += dx * 0.05; item.m.position.z += dz * 0.05; }
+                        let item = b.movingBRs[i]; let dx = item.tx - item.m.position.x; let dz = item.tz - item.m.position.z;
+                        if(Math.sqrt(dx*dx + dz*dz) < 0.1) { item.m.position.set(item.tx, 0.25, item.tz); item.m.rotation.set(0,0,0); b.movingBRs.splice(i, 1); } 
+                        else { item.m.position.x += dx * 0.05; item.m.position.z += dz * 0.05; item.m.rotation.y += 0.2; }
                     }
-
                     if(player.position.distanceTo(b.btn.position)<1.5){b.lA=true; b.lT=30; b.btn.position.y=0.05;} if(b.lA){ b.lsr.visible=true; if(b.owner!=='player'){ let lB=new THREE.Box3().setFromObject(b.lsr); let pB=new THREE.Box3().setFromObject(player); if(lB.intersectsBox(pB)){player.position.x+=(player.position.x>0?-1:1)*0.5;} } } else {b.lsr.visible=false; b.btn.position.y=0.1;} if(b.lT>0){b.lT-=1/60; if(b.lT<=0)b.lA=false;} 
                 });
 
