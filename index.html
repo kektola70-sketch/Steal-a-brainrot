@@ -264,6 +264,7 @@
                 } scrTex.needsUpdate = true;
             }, 1000);
 
+            // РАДУЖНАЯ МАШИНА
             const rMCv = document.createElement('canvas'); rMCv.width=512; rMCv.height=256; const rMCtx = rMCv.getContext('2d');
             const rMTex = new THREE.CanvasTexture(rMCv); 
             const machineMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4), new THREE.MeshStandardMaterial({color: 0x222222}));
@@ -348,7 +349,8 @@
             function buildBR(t, ench) {
                 const gr=new THREE.Group(); let incMult = ench==='gold'?1.5:ench==='diamond'?5:ench==='rainbow'?15:1;
                 let mat; if(ench==='gold') mat=new THREE.MeshStandardMaterial({color:0xffd700, metalness:0.8, roughness:0.2}); else if(ench==='diamond') mat=new THREE.MeshStandardMaterial({color:0x00ffff, transparent:true, opacity:0.8, metalness:0.9}); else if(ench==='rainbow') { mat=new THREE.MeshStandardMaterial({color:0xff0000}); rainbowMats.push(mat); }
-                const mG=mat||new THREE.MeshStandardMaterial({color:0x888888}); const mY=mat||new THREE.MeshStandardMaterial({color:0xffff00}); const mB=mat||new THREE.MeshStandardMaterial({color:0x0055ff}); const mP=mat||new THREE.MeshStandardMaterial({color:0xffccaa}); const mBk=new MeshStandardMaterial({color:0x111111});
+                const mG=mat||new THREE.MeshStandardMaterial({color:0x888888}); const mY=mat||new THREE.MeshStandardMaterial({color:0xffff00}); const mB=mat||new THREE.MeshStandardMaterial({color:0x0055ff}); const mP=mat||new THREE.MeshStandardMaterial({color:0xffccaa}); 
+                const mBk=new THREE.MeshStandardMaterial({color:0x111111}); // ОШИБКА ИСПРАВЛЕНА ЗДЕСЬ (добавлено THREE.)
                 
                 if(t==='noobini'){ const l=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),mB);l.position.y=0.4; const to=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4),new THREE.MeshStandardMaterial({color:0x00aa00}));to.position.y=1.2; const h=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),mY);h.position.y=1.9; gr.add(l,to,h); gr.td={n:'Noobini', p:0, i:1*incMult, t, e:ench}; }
                 else if(t==='pipikiwi'){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,16),mat||new THREE.MeshStandardMaterial({color:0x6b8e23}));b.position.y=0.9;b.scale.set(1,1.1,1); const h=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.3,0.4),mG);h.position.set(0,0.9,0.6); gr.add(b,h); gr.td={n:'Pipi Kiwi', p:50, i:2*incMult, t, e:ench}; }
@@ -359,7 +361,7 @@
                 
                 gr.traverse(c=>{if(c.isMesh)c.castShadow=true;});
                 const lbl = crTxt(gr.td.n, ench, gr.td.p, gr.td.i); lbl.position.y = 2.5; gr.add(lbl); 
-                scene.add(gr); // ИСПРАВЛЕНИЕ: ДОБАВЛЯЕМ В СЦЕНУ!
+                scene.add(gr); 
                 return gr;
             }
 
@@ -376,7 +378,6 @@
                 speakName(b.td.n);
             }, 3000);
 
-            // ВОССТАНОВЛЕНИЕ СОХРАНЕННЫХ МОДЕЛЕЙ
             if(snap.exists() && snap.val().baseSlots) {
                 snap.val().baseSlots.forEach((sData, i) => {
                     if(sData && sData.t) {
